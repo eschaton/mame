@@ -103,7 +103,7 @@
                         Optional color frame buffer (can run mono and
                         color simultaneously) on P4 connector. Onboard
                         SCSI. SIMM memory (100ns 1M x 9 SIMMs). High
-                        (1600 * 1100) or low (1152 * 900) resolution
+                        (1600 * 1280) or low (1152 * 900) resolution
                         mono selectable by jumper. Thin coax or AUI
                         Ethernet. Code-named "Ferrari". 4M stock on
                         501-1205/1322, 0M stock on 501-1322/1345.
@@ -247,7 +247,8 @@ public:
 		m_idprom(*this, "idprom"),
 		m_ram(*this, RAM_TAG),
 		m_lance(*this, "lance"),
-		m_diagsw(*this, "diagsw")
+		m_diagsw(*this, "diagsw"),
+		m_highres(*this, "highres")
 	{ }
 
 	void sun3(machine_config &config);
@@ -276,6 +277,7 @@ private:
 	required_device<ram_device> m_ram;
 	required_device<am79c90_device> m_lance;
 	required_ioport m_diagsw;
+	required_ioport m_highres;
 
 	uint32_t tl_mmu_r(offs_t offset, uint32_t mem_mask = ~0);
 	void tl_mmu_w(offs_t offset, uint32_t data, uint32_t mem_mask = ~0);
@@ -295,6 +297,8 @@ private:
 	template <unsigned W, unsigned H>
 	uint32_t bw2_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
 	uint32_t bw2_350_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
+	uint16_t bw2_cr_r(offs_t offset);
+	void bw2_cr_w(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
 
 	TIMER_DEVICE_CALLBACK_MEMBER(sun3_timer);
 
@@ -312,6 +316,7 @@ private:
 	uint32_t m_enable, m_diag, m_dvma_enable, m_parregs[8], m_irqctrl, m_ecc[4];
 	uint16_t m_scsictrl;
 	uint8_t m_buserr;
+	uint16_t m_bw2_cr;
 
 	uint32_t m_context;
 	uint8_t m_segmap[8][2048];
@@ -779,6 +784,7 @@ void sun3_state::vmetype0space_map(address_map &map)
 	map(0x00000000, 0x08ffffff).rw(FUNC(sun3_state::ram_r), FUNC(sun3_state::ram_w));
 	map(0xfe400000, 0xfe41ffff).ram(); // not sure what's going on here (3/110)
 	map(0xff000000, 0xff03ffff).ram().share(m_bw2_vram);
+	map(0xff1c0000, 0xff1cffff).rw(FUNC(sun3_state::bw2_cr_r), FUNC(sun3_state::bw2_cr_w));
 }
 
 // type 0 without VRAM (3/50)
@@ -987,12 +993,29 @@ uint32_t sun3_state::bw2_350_update(screen_device &screen, bitmap_rgb32 &bitmap,
 	return 0;
 }
 
+uint16_t sun3_state::bw2_cr_r(offs_t offset)
+{
+	// Incorporate HIGHRES.
+	const uint16_t highres = m_highres->read() << 15;
+	return (m_bw2_cr & ~(u16(1) << 15)) | highres;
+}
+
+void sun3_state::bw2_cr_w(offs_t offset, uint16_t data, uint16_t mem_mask)
+{
+	COMBINE_DATA(&m_bw2_cr);
+}
+
 /* Input ports */
 static INPUT_PORTS_START( sun3 )
 	PORT_START("diagsw")
 	PORT_CONFNAME(1, 0, "Diagnostic Switch")
 	PORT_CONFSETTING(0, "Normal")
 	PORT_CONFSETTING(1, "Diagnostic")
+
+	PORT_START("highres")
+	PORT_CONFNAME(1, 0, "HIGHRES")
+	PORT_CONFSETTING(0, "On")
+	PORT_CONFSETTING(1, "Off")
 INPUT_PORTS_END
 
 void sun3_state::machine_start()
@@ -1014,6 +1037,7 @@ void sun3_state::machine_reset()
 	m_dvma_enable = 0;
 	m_irqctrl = 0;
 	m_bInBusErr = false;
+	m_bw2_cr = 0;
 
 	scsictrl_w(0);
 }
@@ -1026,8 +1050,8 @@ void sun3_state::sun3(machine_config &config)
 	m_maincpu->set_addrmap(AS_PROGRAM, &sun3_state::sun3_mem);
 
 	screen_device &bwtwo(SCREEN(config, "bwtwo", SCREEN_TYPE_RASTER));
-	bwtwo.set_screen_update(NAME((&sun3_state::bw2_update<1152, 900>)));
-	bwtwo.set_size(1600,1100);
+	bwtwo.set_screen_update(NAME((&sun3_state::bw2_update<1600, 1280>)));
+	bwtwo.set_size(1600, 1280);
 	bwtwo.set_visarea(0, 1152-1, 0, 900-1);
 	bwtwo.set_refresh_hz(72);
 
@@ -1094,9 +1118,9 @@ void sun3_state::sun3_60(machine_config &config)
 	m_maincpu->set_addrmap(AS_PROGRAM, &sun3_state::sun3_mem);
 
 	screen_device &bwtwo(*subdevice<screen_device>("bwtwo"));
-	bwtwo.set_screen_update(NAME((&sun3_state::bw2_update<1600, 1100>)));
-	bwtwo.set_size(1600,1100);
-	bwtwo.set_visarea(0, 1600-1, 0, 1100-1);
+	bwtwo.set_screen_update(NAME((&sun3_state::bw2_update<1600, 1200>)));
+	bwtwo.set_size(1600, 1280);
+	bwtwo.set_visarea(0, 1600-1, 0, 1200-1);
 	bwtwo.set_refresh_hz(72);
 }
 
@@ -1117,9 +1141,9 @@ void sun3_state::sun3200(machine_config &config)
 	m_maincpu->set_addrmap(AS_PROGRAM, &sun3_state::sun3_mem);
 
 	screen_device &bwtwo(*subdevice<screen_device>("bwtwo"));
-	bwtwo.set_screen_update(NAME((&sun3_state::bw2_update<1600, 1100>)));
-	bwtwo.set_size(1600,1100);
-	bwtwo.set_visarea(0, 1600-1, 0, 1100-1);
+	bwtwo.set_screen_update(NAME((&sun3_state::bw2_update<1600, 1280>)));
+	bwtwo.set_size(1600, 1280);
+	bwtwo.set_visarea(0, 1600-1, 0, 1280-1);
 	bwtwo.set_refresh_hz(72);
 
 	m_ram->set_default_size("32M").set_extra_options("64M,96M,128M");
@@ -1135,7 +1159,7 @@ void sun3_state::sun3_50(machine_config &config)
 
 	screen_device &bwtwo(SCREEN(config, "bwtwo", SCREEN_TYPE_RASTER));
 	bwtwo.set_screen_update(FUNC(sun3_state::bw2_350_update));
-	bwtwo.set_size(1600,1100);
+	bwtwo.set_size(1600, 1280);
 	bwtwo.set_visarea(0, 1152-1, 0, 900-1);
 	bwtwo.set_refresh_hz(72);
 
