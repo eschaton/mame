@@ -4728,6 +4728,8 @@ if (BUSES["SBUS"]~=null) then
 		MAME_DIR .. "src/devices/bus/sbus/hme.h",
 		MAME_DIR .. "src/devices/bus/sbus/sunpc.cpp",
 		MAME_DIR .. "src/devices/bus/sbus/sunpc.h",
+		MAME_DIR .. "src/devices/bus/sbus/sun_bwtwo.cpp",
+		MAME_DIR .. "src/devices/bus/sbus/sun_bwtwo.h",
 		MAME_DIR .. "src/devices/bus/sbus/sbus.cpp",
 		MAME_DIR .. "src/devices/bus/sbus/sbus.h",
 	}
