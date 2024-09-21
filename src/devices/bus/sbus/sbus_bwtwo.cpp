@@ -6,8 +6,9 @@
 
 ***************************************************************************/
 
+#include "sbus_bwtwo.h"
+
 #include "emu.h"
-#include "bwtwo.h"
 #include "screen.h"
 
 #include <algorithm>
@@ -18,8 +19,8 @@ DEFINE_DEVICE_TYPE(SBUS_BWTWO, sbus_bwtwo_device, "sbus_bwtwo", "Sun bwtwo SBus 
 void sbus_bwtwo_device::mem_map(address_map &map)
 {
 	map(0x00000000, 0x00007fff).r(FUNC(sbus_bwtwo_device::rom_r));
-	map(0x00400000, 0x0040001f).rw(FUNC(sbus_bwtwo_device::regs_r), FUNC(sbus_bwtwo_device::regs_w));
-	map(0x00800000, 0x008fffff).rw(FUNC(sbus_bwtwo_device::vram_r), FUNC(sbus_bwtwo_device::vram_w));
+	map(0x00400000, 0x0040001f).rw(m_bwtwo, FUNC(sun_bwtwo_device::regs_r), FUNC(sun_bwtwo_device::regs_w));
+	map(0x00800000, 0x008fffff).rw(m_bwtwo, FUNC(sun_bwtwo_device::vram_r), FUNC(sun_bwtwo_device::vram_w));
 }
 
 ROM_START( sbus_bwtwo )
@@ -37,9 +38,19 @@ const tiny_rom_entry *sbus_bwtwo_device::device_rom_region() const
 }
 
 sbus_bwtwo_device::sbus_bwtwo_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
-	: sun_bwtwo_device(mconfig, SBUS_BWTWO, tag, owner, clock)
+	: device_t(mconfig, SBUS_BWTWO, tag, owner, clock)
 	, device_sbus_card_interface(mconfig, *this)
+	, m_bwtwo(*this, "bwtwo")
 	, m_rom(*this, "prom")
+{
+}
+
+void sbus_bwtwo_device::device_add_mconfig(machine_config &config)
+{
+	SUN_BWTWO(config, m_bwtwo, 0);
+}
+
+void sbus_bwtwo_device::device_start()
 {
 }
 

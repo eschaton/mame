@@ -418,7 +418,9 @@
 #include "bus/sunkbd/sunkbd.h"
 #include "bus/sunmouse/sunmouse.h"
 #include "bus/sbus/sbus.h"
-#include "bus/sbus/bwtwo.h"
+#include "bus/sbus/sbus_bwtwo.h"
+#include "bus/sunp4/sunp4.h"
+#include "bus/sunp4/sunp4_bwtwo.h"
 #include "cpu/sparc/sparc.h"
 #include "imagedev/floppy.h"
 #include "machine/am79c90.h"
@@ -428,6 +430,7 @@
 #include "machine/nvram.h"
 #include "machine/ram.h"
 #include "machine/sun4c_mmu.h"
+#include "machine/sun_bwtwo.h"
 #include "machine/timekpr.h"
 #include "machine/upd765.h"
 #include "machine/z80scc.h"
@@ -725,7 +728,6 @@ class sun4_110_state : public sun4_state
 public:
 	sun4_110_state(const machine_config &mconfig, device_type type, const char *tag)
 		: sun4_state(mconfig, type, tag)
-		, m_bwtwo(*this, "bwtwo")
 	{
 	}
 
@@ -733,9 +735,6 @@ public:
 
 protected:
 	virtual void system_specific_type1space_map(address_map &map) override;
-
-private:
-	required_device<sun_bwtwo_device> m_bwtwo;
 };
 
 u32 sun4_base_state::debugger_r(offs_t offset, u32 mem_mask)
@@ -1555,7 +1554,7 @@ void sun4c_state::sun4_20(machine_config &config)
 
 	m_sbus_slot[0]->set_fixed(true);
 	m_sbus_slot[1]->set_fixed(true);
-	m_sbus_slot[2]->set_default_option("bwtwo");
+	m_sbus_slot[2]->set_default_option("sbus_bwtwo");
 	m_sbus_slot[2]->set_fixed(true);
 }
 
@@ -1580,7 +1579,7 @@ void sun4c_state::sun4_25(machine_config& config)
 
 	m_sbus_slot[0]->set_fixed(true);
 	m_sbus_slot[1]->set_fixed(true);
-	m_sbus_slot[2]->set_default_option("bwtwo");
+	m_sbus_slot[2]->set_default_option("sbus_bwtwo");
 	m_sbus_slot[2]->set_fixed(true);
 }
 
@@ -1597,7 +1596,7 @@ void sun4c_state::sun4_40(machine_config &config)
 	m_sbus_slot[0]->set_clock(25'000'000);
 	m_sbus_slot[1]->set_clock(25'000'000);
 	m_sbus_slot[2]->set_clock(25'000'000);
-	m_sbus_slot[2]->set_default_option("bwtwo");
+	m_sbus_slot[2]->set_default_option("sbus_bwtwo");
 	m_sbus_slot[2]->set_fixed(true);
 }
 
@@ -1636,7 +1635,7 @@ void sun4c_state::sun4_65(machine_config &config)
 	m_sbus_slot[0]->set_clock(25'000'000);
 	m_sbus_slot[1]->set_clock(25'000'000);
 	m_sbus_slot[2]->set_clock(25'000'000);
-	m_sbus_slot[2]->set_default_option("bwtwo");
+	m_sbus_slot[2]->set_default_option("sbus_bwtwo");
 }
 
 void sun4c_state::sun4_75(machine_config &config)
@@ -1655,14 +1654,15 @@ void sun4_110_state::sun4_110(machine_config &config)
 {
 	sun4(config);
 
-	// Set up P4 (local bus) bwtwo at 0x0b300000 level 4 (info from NetBSD).
+	// Set up P4 (local bus)
+	//xxx
 
-	SUN_BWTWO(config, m_bwtwo, 0);
+	// Add BW2 as default P4 device
+	//xxx
 }
 
 void sun4_110_state::system_specific_type1space_map(address_map &map)
 {
-	map(0x0b300000, 0x0bffffff).rw(m_bwtwo, FUNC(sun_bwtwo_device::bwtwo_r), FUNC(sun_bwtwo_device::bwtwo_w));
 }
 
 /*

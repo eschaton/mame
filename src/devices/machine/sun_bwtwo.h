@@ -6,12 +6,11 @@
 
 ***************************************************************************/
 
-#ifndef MAME_BUS_SBUS_SUN_BWTWO_H
-#define MAME_BUS_SBUS_SUN_BWTWO_H
+#ifndef DEVICE_MACHINE_SUN_BWTWO_H
+#define DEVICE_MACHINE_SUN_BWTWO_H
 
 #pragma once
 
-#include "cpu/sparc/sparc.h"
 #include "machine/bankdev.h"
 
 
@@ -25,15 +24,15 @@ public:
 	uint8_t bwtwo_r(offs_t offset);
 	void bwtwo_w(offs_t offset, uint8_t data);
 
-protected:
-	// device_t overrides
-	virtual void device_add_mconfig(machine_config &config) override;
-	virtual void device_start() override;
-
 	uint8_t regs_r(offs_t offset);
 	void regs_w(offs_t offset, uint8_t data);
 	uint8_t vram_r(offs_t offset);
 	void vram_w(offs_t offset, uint8_t data);
+
+protected:
+	// device_t overrides
+	virtual void device_add_mconfig(machine_config &config) override;
+	virtual void device_start() override;
 
 private:
 	uint32_t screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
@@ -46,4 +45,4 @@ private:
 
 DECLARE_DEVICE_TYPE(SUN_BWTWO, sun_bwtwo_device)
 
-#endif // MAME_BUS_SBUS_SUN_BWTWO_H
+#endif // DEVICE_MACHINE_SUN_BWTWO_H

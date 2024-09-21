@@ -4859,6 +4859,18 @@ end
 
 ---------------------------------------------------
 --
+--@src/devices/machine/sun4c_mmu.h,MACHINES["SUN_BWTWO"] = true
+---------------------------------------------------
+
+if (MACHINES["SUN_BWTWO"]~=null) then
+	files {
+		MAME_DIR .. "src/devices/machine/sun_bwtwo.cpp",
+		MAME_DIR .. "src/devices/machine/sun_bwtwo.h",
+	}
+end
+
+---------------------------------------------------
+--
 --@src/devices/machine/z8038.h,MACHINES["Z8038"] = true
 ---------------------------------------------------
 

@@ -11,11 +11,12 @@
 
 #pragma once
 
+#include "machine/sun_bwtwo.h"
+
 #include "sbus.h"
-#include "sun_bwtwo.h"
 
 
-class sbus_bwtwo_device : public sun_bwtwo_device, public device_sbus_card_interface
+class sbus_bwtwo_device : public device_t, public device_sbus_card_interface
 {
 public:
 	// construction/destruction
@@ -23,7 +24,9 @@ public:
 
 protected:
 	// device_t overrides
+	virtual void device_add_mconfig(machine_config &config) override;
 	virtual const tiny_rom_entry *device_rom_region() const override;
+	virtual void device_start() override;
 
 	// device_sbus_slot_interface overrides
 	virtual void install_device() override;
@@ -33,6 +36,7 @@ protected:
 	uint32_t rom_r(offs_t offset);
 
 private:
+	required_device<sun_bwtwo_device> m_bwtwo;
 	required_memory_region m_rom;
 };
 

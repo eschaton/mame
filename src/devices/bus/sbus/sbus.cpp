@@ -9,7 +9,7 @@
 #include "emu.h"
 
 // Display boards
-#include "bwtwo.h"
+#include "sbus_bwtwo.h"
 #include "cgthree.h"
 #include "cgsix.h"
 
@@ -24,13 +24,13 @@
 
 void sbus_cards(device_slot_interface &device)
 {
-	device.option_add("bwtwo",    SBUS_BWTWO);    /* Sun bwtwo monochrome display board */
-	device.option_add("cgthree",  SBUS_CGTHREE);  /* Sun cgthree color display board */
-	device.option_add("turbogx",  SBUS_TURBOGX);  /* Sun TurboGX 8-bit color display board */
-	device.option_add("turbogxp", SBUS_TURBOGXP); /* Sun TurboGX+ 8-bit color display board */
-	device.option_add("sunpc",    SBUS_SUNPC);    /* Sun SunPC 5x86 Accelerator board */
-	device.option_add("hme",      SBUS_HME);      /* Sun SunSwift 10/100 + Fast Wide SCSI "Colossus" board */
-	device.option_add("sb300p",   SBUS_SB300P);   /* Artecon CB300P 3-serial/1-parallel board */
+	device.option_add("sbus_bwtwo", SBUS_BWTWO);    /* Sun bwtwo monochrome display board */
+	device.option_add("cgthree",    SBUS_CGTHREE);  /* Sun cgthree color display board */
+	device.option_add("turbogx",    SBUS_TURBOGX);  /* Sun TurboGX 8-bit color display board */
+	device.option_add("turbogxp",   SBUS_TURBOGXP); /* Sun TurboGX+ 8-bit color display board */
+	device.option_add("sunpc",      SBUS_SUNPC);    /* Sun SunPC 5x86 Accelerator board */
+	device.option_add("hme",        SBUS_HME);      /* Sun SunSwift 10/100 + Fast Wide SCSI "Colossus" board */
+	device.option_add("sb300p",     SBUS_SB300P);   /* Artecon CB300P 3-serial/1-parallel board */
 }
 
 DEFINE_DEVICE_TYPE(SBUS_SLOT, sbus_slot_device, "sbus_slot", "Sun SBus Slot")

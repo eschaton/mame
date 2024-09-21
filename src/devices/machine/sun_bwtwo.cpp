@@ -12,14 +12,16 @@
 
 #include <algorithm>
 
-//#define VERBOSE 1
-//#define LOG_OUTPUT_FUNC osd_printf_info
+#define VERBOSE 1
+// #define LOG_OUTPUT_FUNC osd_printf_info
+#define	LOG_OUTPUT_FUNC	printf
 #include "logmacro.h"
 
-DEFINE_DEVICE_TYPE(SUN_BWTWO, sun_bwtwo_device, "bwtwo", "Sun bwtwo Video")
+DEFINE_DEVICE_TYPE(SUN_BWTWO, sun_bwtwo_device, "bwtwo", "Sun BW2 Video")
 
 void sun_bwtwo_device::device_add_mconfig(machine_config &config)
 {
+	// TODO: Accommodate 1600x1280 high-res monochrome.
 	screen_device &screen(SCREEN(config, "screen", SCREEN_TYPE_RASTER));
 	screen.set_screen_update(FUNC(sun_bwtwo_device::screen_update));
 	screen.set_size(1152, 900);
@@ -87,14 +89,14 @@ uint8_t sun_bwtwo_device::bwtwo_r(offs_t offset)
 		data = 0;
 	}
 
-	LOG("%s: bwtwo_r: %08x = %02x\n", machine().describe_context(), offset, data);
+	LOG("%s: bwtwo_r: %08x = %02x\n", "bwtwo", offset, data);
 
 	return data;
 }
 
 void sun_bwtwo_device::bwtwo_w(offs_t offset, uint8_t data)
 {
-	LOG("%s: bwtwo_w: %08x = %02x\n", machine().describe_context(), offset, data);
+	LOG("%s: bwtwo_w: %08x = %02x\n", "bwtwo", offset, data);
 
 	if (offset >= BWREG_MEM) {
 		vram_w(offset - BWREG_MEM, data);
@@ -107,13 +109,13 @@ void sun_bwtwo_device::bwtwo_w(offs_t offset, uint8_t data)
 
 uint8_t sun_bwtwo_device::regs_r(offs_t offset)
 {
-	LOG("%s: regs_r (unimplemented): %08x\n", machine().describe_context(), 0x400000 + offset);
+	LOG("%s: regs_r (unimplemented): %08x\n", "bwtwo", 0x400000 + offset);
 	return 0;
 }
 
 void sun_bwtwo_device::regs_w(offs_t offset, uint8_t data)
 {
-	LOG("%s: regs_w (unimplemented): %08x = %02x\n", machine().describe_context(), 0x400000 + offset, data);
+	LOG("%s: regs_w (unimplemented): %08x = %02x\n", "bwtwo", 0x400000 + offset, data);
 }
 
 uint8_t sun_bwtwo_device::vram_r(offs_t offset)

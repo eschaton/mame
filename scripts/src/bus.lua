@@ -4711,6 +4711,20 @@ end
 
 ---------------------------------------------------
 --
+--@src/devices/bus/sunp4/sunp4.h,BUSES["SUNP4"] = true
+---------------------------------------------------
+
+if (BUSES["SUNP4"]~=null) then
+	files {
+		MAME_DIR .. "src/devices/bus/sunp4/sunp4_bwtwo.cpp",
+		MAME_DIR .. "src/devices/bus/sunp4/sunp4_bwtwo.h",
+		MAME_DIR .. "src/devices/bus/sunp4/sunp4.cpp",
+		MAME_DIR .. "src/devices/bus/sunp4/sunp4.h",
+	}
+end
+
+---------------------------------------------------
+--
 --@src/devices/bus/sbus/sbus.h,BUSES["SBUS"] = true
 ---------------------------------------------------
 
@@ -4718,8 +4732,8 @@ if (BUSES["SBUS"]~=null) then
 	files {
 		MAME_DIR .. "src/devices/bus/sbus/artecon.cpp",
 		MAME_DIR .. "src/devices/bus/sbus/artecon.h",
-		MAME_DIR .. "src/devices/bus/sbus/bwtwo.cpp",
-		MAME_DIR .. "src/devices/bus/sbus/bwtwo.h",
+		MAME_DIR .. "src/devices/bus/sbus/sbus_bwtwo.cpp",
+		MAME_DIR .. "src/devices/bus/sbus/sbus_bwtwo.h",
 		MAME_DIR .. "src/devices/bus/sbus/cgsix.cpp",
 		MAME_DIR .. "src/devices/bus/sbus/cgsix.h",
 		MAME_DIR .. "src/devices/bus/sbus/cgthree.cpp",
@@ -4728,8 +4742,6 @@ if (BUSES["SBUS"]~=null) then
 		MAME_DIR .. "src/devices/bus/sbus/hme.h",
 		MAME_DIR .. "src/devices/bus/sbus/sunpc.cpp",
 		MAME_DIR .. "src/devices/bus/sbus/sunpc.h",
-		MAME_DIR .. "src/devices/bus/sbus/sun_bwtwo.cpp",
-		MAME_DIR .. "src/devices/bus/sbus/sun_bwtwo.h",
 		MAME_DIR .. "src/devices/bus/sbus/sbus.cpp",
 		MAME_DIR .. "src/devices/bus/sbus/sbus.h",
 	}
