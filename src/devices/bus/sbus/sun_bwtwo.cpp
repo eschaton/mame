@@ -12,6 +12,9 @@
 
 #include <algorithm>
 
+//#define VERBOSE 1
+//#define LOG_OUTPUT_FUNC osd_printf_info
+#include "logmacro.h"
 
 DEFINE_DEVICE_TYPE(SUN_BWTWO, sun_bwtwo_device, "bwtwo", "Sun bwtwo Video")
 
@@ -68,42 +71,49 @@ uint32_t sun_bwtwo_device::screen_update(screen_device &screen, bitmap_rgb32 &bi
 }
 
 // From NetBSD
-#define	BWREG_ID	0
-#define	BWREG_REG	0x400000
-#define	BWREG_MEM	0x800000
+#define	BWREG_ID	0 + 0x00100000
+#define	BWREG_REG	0x400000 + 0x00100000
+#define	BWREG_MEM	0x800000 + 0x00100000
 
 uint8_t sun_bwtwo_device::bwtwo_r(offs_t offset)
 {
+	uint8_t data;
+
 	if (offset >= BWREG_MEM) {
-		return vram_r(offset - BWREG_MEM);
+		data = vram_r(offset - BWREG_MEM);
 	} else if (offset >= BWREG_REG) {
-		return regs_r(offset - BWREG_REG);
+		data = regs_r(offset - BWREG_REG);
 	} else {
-		return 0;
+		data = 0;
 	}
+
+	LOG("%s: bwtwo_r: %08x = %02x\n", machine().describe_context(), offset, data);
+
+	return data;
 }
 
 void sun_bwtwo_device::bwtwo_w(offs_t offset, uint8_t data)
 {
+	LOG("%s: bwtwo_w: %08x = %02x\n", machine().describe_context(), offset, data);
+
 	if (offset >= BWREG_MEM) {
 		vram_w(offset - BWREG_MEM, data);
 	} else if (offset >= BWREG_REG) {
 		return regs_w(offset - BWREG_REG, data);
 	} else {
 		// Do nothing.
-		logerror("%s: bwtwo_w: %08x\n", machine().describe_context(), offset);
 	}
 }
 
 uint8_t sun_bwtwo_device::regs_r(offs_t offset)
 {
-	logerror("%s: regs_r (unimplemented): %08x\n", machine().describe_context(), 0x400000 + offset);
+	LOG("%s: regs_r (unimplemented): %08x\n", machine().describe_context(), 0x400000 + offset);
 	return 0;
 }
 
 void sun_bwtwo_device::regs_w(offs_t offset, uint8_t data)
 {
-	logerror("%s: regs_w (unimplemented): %08x = %02x\n", machine().describe_context(), 0x400000 + offset, data);
+	LOG("%s: regs_w (unimplemented): %08x = %02x\n", machine().describe_context(), 0x400000 + offset, data);
 }
 
 uint8_t sun_bwtwo_device::vram_r(offs_t offset)

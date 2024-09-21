@@ -682,6 +682,9 @@ public:
 
 	void sun4(machine_config &config);
 
+protected:
+	virtual void system_specific_type1space_map(address_map &map);
+
 private:
 	void type1space_map(address_map &map);
 };
@@ -715,6 +718,24 @@ private:
 
 	required_device<sbus_device> m_sbus;
 	required_device_array<sbus_slot_device, 3> m_sbus_slot;
+};
+
+class sun4_110_state : public sun4_state
+{
+public:
+	sun4_110_state(const machine_config &mconfig, device_type type, const char *tag)
+		: sun4_state(mconfig, type, tag)
+		, m_bwtwo(*this, "bwtwo")
+	{
+	}
+
+	void sun4_110(machine_config &config);
+
+protected:
+	virtual void system_specific_type1space_map(address_map &map) override;
+
+private:
+	required_device<sun_bwtwo_device> m_bwtwo;
 };
 
 u32 sun4_base_state::debugger_r(offs_t offset, u32 mem_mask)
@@ -787,6 +808,11 @@ void sun4c_state::type1space_map(address_map &map)
 void sun4_state::type1space_map(address_map &map)
 {
 	type1space_base_map(map);
+	system_specific_type1space_map(map);
+}
+
+void sun4_state::system_specific_type1space_map(address_map &map)
+{
 }
 
 void sun4_base_state::system_asi_map(address_map &map)
@@ -1625,6 +1651,20 @@ void sun4c_state::sun4_75(machine_config &config)
 	m_maincpu->set_clock(40'000'000);
 }
 
+void sun4_110_state::sun4_110(machine_config &config)
+{
+	sun4(config);
+
+	// Set up P4 (local bus) bwtwo at 0x0b300000 level 4 (info from NetBSD).
+
+	SUN_BWTWO(config, m_bwtwo, 0);
+}
+
+void sun4_110_state::system_specific_type1space_map(address_map &map)
+{
+	map(0x0b300000, 0x0bffffff).rw(m_bwtwo, FUNC(sun_bwtwo_device::bwtwo_r), FUNC(sun_bwtwo_device::bwtwo_w));
+}
+
 /*
 Boot PROM
 
@@ -1874,7 +1914,7 @@ ROM_END
 
 //    YEAR  NAME      PARENT    COMPAT  MACHINE  INPUT  CLASS        INIT        COMPANY             FULLNAME                       FLAGS
 // sun4
-COMP( 198?, sun4_110, 0,        0,      sun4,    sun4,  sun4_state,  empty_init, "Sun Microsystems", "Sun 4/110",                   MACHINE_NOT_WORKING | MACHINE_NO_SOUND )
+COMP( 198?, sun4_110, 0,        0,      sun4_110,sun4,sun4_110_state,empty_init, "Sun Microsystems", "Sun 4/110",                   MACHINE_NOT_WORKING | MACHINE_NO_SOUND )
 COMP( 1987, sun4_300, 0,        0,      sun4,    sun4,  sun4_state,  empty_init, "Sun Microsystems", "Sun 4/3x0",                   MACHINE_NOT_WORKING | MACHINE_NO_SOUND )
 COMP( 198?, sun4_400, 0,        0,      sun4,    sun4,  sun4_state,  empty_init, "Sun Microsystems", "Sun 4/4x0",                   MACHINE_NOT_WORKING | MACHINE_NO_SOUND )
 
