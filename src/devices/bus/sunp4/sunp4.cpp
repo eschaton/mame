@@ -9,13 +9,14 @@
 #include "emu.h"
 
 // Display boards
-#include "sunp4_bwtwo.h"
+#include "sunp4_mg.h"
 
 #include "sunp4.h"
 
 void sunp4_cards(device_slot_interface &device)
 {
-	device.option_add("sunp4_bwtwo",    SUNP4_BWTWO);   /* Sun bwtwo monochrome display board */
+	device.option_add("sunp4_mg3",    SUNP4_MG3);   /* Sun P4 Bus MG3 ECL monochrome display board */
+	device.option_add("sunp4_mg4",    SUNP4_MG4);   /* Sun P4 Bus MG4 Analog/ECL monochrome display board */
 }
 
 DEFINE_DEVICE_TYPE(SUNP4_SLOT, sunp4_slot_device, "sunp4_slot", "Sun P4 Bus Slot")

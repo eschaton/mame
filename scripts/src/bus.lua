@@ -4716,8 +4716,8 @@ end
 
 if (BUSES["SUNP4"]~=null) then
 	files {
-		MAME_DIR .. "src/devices/bus/sunp4/sunp4_bwtwo.cpp",
-		MAME_DIR .. "src/devices/bus/sunp4/sunp4_bwtwo.h",
+		MAME_DIR .. "src/devices/bus/sunp4/sunp4_mg.cpp",
+		MAME_DIR .. "src/devices/bus/sunp4/sunp4_mg.h",
 		MAME_DIR .. "src/devices/bus/sunp4/sunp4.cpp",
 		MAME_DIR .. "src/devices/bus/sunp4/sunp4.h",
 	}

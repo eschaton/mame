@@ -327,6 +327,10 @@ private:
 	uint32_t m_cache_tags[0x4000], m_cache_data[0x4000];
 };
 
+class sun3_3004_state : public sun3_state {
+
+};
+
 static void sun_cdrom(device_t *device)
 {
 	downcast<nscsi_cdrom_device &>(*device).set_block_size(512);

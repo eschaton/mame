@@ -420,7 +420,7 @@
 #include "bus/sbus/sbus.h"
 #include "bus/sbus/sbus_bwtwo.h"
 #include "bus/sunp4/sunp4.h"
-#include "bus/sunp4/sunp4_bwtwo.h"
+#include "bus/sunp4/sunp4_mg.h"
 #include "cpu/sparc/sparc.h"
 #include "imagedev/floppy.h"
 #include "machine/am79c90.h"
