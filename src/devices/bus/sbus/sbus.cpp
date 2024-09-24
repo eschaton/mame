@@ -1,5 +1,5 @@
 // license:BSD-3-Clause
-// copyright-holders:Ryan Holtz
+// copyright-holders:Ryan Holtz, Chris Hanson
 /***************************************************************************
 
   sbus.c - Sun SBus slot bus and card emulation
@@ -9,9 +9,9 @@
 #include "emu.h"
 
 // Display boards
-#include "bwtwo.h"
 #include "cgthree.h"
 #include "cgsix.h"
+#include "sbus_mg.h"
 
 // Accelerator boards
 #include "sunpc.h"
@@ -24,7 +24,8 @@
 
 void sbus_cards(device_slot_interface &device)
 {
-	device.option_add("bwtwo",    SBUS_BWTWO);    /* Sun bwtwo monochrome display board */
+	device.option_add("sbus_mg1", SBUS_MG1);      /* Sun MG1 (bwtwo ECL) monochrome display board */
+	device.option_add("sbus_mg2", SBUS_MG2);      /* Sun MG2 (bwtwo ECL/Analog) monochrome display board */
 	device.option_add("cgthree",  SBUS_CGTHREE);  /* Sun cgthree color display board */
 	device.option_add("turbogx",  SBUS_TURBOGX);  /* Sun TurboGX 8-bit color display board */
 	device.option_add("turbogxp", SBUS_TURBOGXP); /* Sun TurboGX+ 8-bit color display board */

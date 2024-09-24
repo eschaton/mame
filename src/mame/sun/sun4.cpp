@@ -418,7 +418,6 @@
 #include "bus/sunkbd/sunkbd.h"
 #include "bus/sunmouse/sunmouse.h"
 #include "bus/sbus/sbus.h"
-#include "bus/sbus/bwtwo.h"
 #include "cpu/sparc/sparc.h"
 #include "imagedev/floppy.h"
 #include "machine/am79c90.h"
@@ -1529,7 +1528,7 @@ void sun4c_state::sun4_20(machine_config &config)
 
 	m_sbus_slot[0]->set_fixed(true);
 	m_sbus_slot[1]->set_fixed(true);
-	m_sbus_slot[2]->set_default_option("bwtwo");
+	m_sbus_slot[2]->set_default_option("sbus_mg2");
 	m_sbus_slot[2]->set_fixed(true);
 }
 
@@ -1554,7 +1553,7 @@ void sun4c_state::sun4_25(machine_config& config)
 
 	m_sbus_slot[0]->set_fixed(true);
 	m_sbus_slot[1]->set_fixed(true);
-	m_sbus_slot[2]->set_default_option("bwtwo");
+	m_sbus_slot[2]->set_default_option("sbus_mg2");
 	m_sbus_slot[2]->set_fixed(true);
 }
 
@@ -1571,7 +1570,7 @@ void sun4c_state::sun4_40(machine_config &config)
 	m_sbus_slot[0]->set_clock(25'000'000);
 	m_sbus_slot[1]->set_clock(25'000'000);
 	m_sbus_slot[2]->set_clock(25'000'000);
-	m_sbus_slot[2]->set_default_option("bwtwo");
+	m_sbus_slot[2]->set_default_option("sbus_mg2");
 	m_sbus_slot[2]->set_fixed(true);
 }
 
@@ -1610,7 +1609,7 @@ void sun4c_state::sun4_65(machine_config &config)
 	m_sbus_slot[0]->set_clock(25'000'000);
 	m_sbus_slot[1]->set_clock(25'000'000);
 	m_sbus_slot[2]->set_clock(25'000'000);
-	m_sbus_slot[2]->set_default_option("bwtwo");
+	m_sbus_slot[2]->set_default_option("sbus_mg2");
 }
 
 void sun4c_state::sun4_75(machine_config &config)

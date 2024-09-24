@@ -1236,6 +1236,17 @@ end
 
 --------------------------------------------------
 --
+--@src/devices/video/sun_bwtwo.h,VIDEOS["SUN_BWTWO"] = true
+--------------------------------------------------
+if (VIDEOS["SUN_BWTWO"]~=null) then
+	files {
+		MAME_DIR .. "src/devices/video/sun_bwtwo.cpp",
+		MAME_DIR .. "src/devices/video/sun_bwtwo.h",
+	}
+end
+
+--------------------------------------------------
+--
 --@src/devices/video/t6963c.h,VIDEOS["T6963C"] = true
 --------------------------------------------------
 
