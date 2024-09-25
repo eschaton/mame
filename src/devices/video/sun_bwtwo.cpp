@@ -32,7 +32,7 @@ DEFINE_DEVICE_TYPE(SUN_BWTWO, sun_bwtwo_device, "bwtwo", "Sun bwtwo Video")
 
 sun_bwtwo_device::sun_bwtwo_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
 	: device_t(mconfig, SUN_BWTWO, tag, owner, clock)
-	, m_screen(*this, "screen")
+	, device_video_interface(mconfig, *this, false)
 	, m_control(0)
 	, m_interrupts_enabled(false)
 	, m_video_enabled(false)
@@ -95,11 +95,6 @@ void sun_bwtwo_device::vram_w(offs_t offset, uint8_t data)
 
 void sun_bwtwo_device::device_add_mconfig(machine_config &config)
 {
-	screen_device &screen(SCREEN(config, "screen", SCREEN_TYPE_RASTER));
-	screen.set_screen_update(FUNC(sun_bwtwo_device::screen_update));
-	screen.set_size(1152, 900);
-	screen.set_visarea(0, 1152-1, 0, 900-1);
-	screen.set_refresh_hz(66);
 }
 
 void sun_bwtwo_device::device_start()
@@ -169,8 +164,9 @@ uint8_t sun_bwtwo_device::status_r()
 	LOGREGISTER("sun_bwtwo: status_r: interrupt pending = %s\n", interrupt_pending ? "true" : "false");
 
 	// Bits 6..4 of the status register specify the monitor sense code.
-	// Derive that from the width of the attached screen.
-	const int width = m_screen->width();
+	// Derive that from the width of the attached screen, if any, otherwise
+	// assume a default size.
+	const int width = has_screen() ? screen().width() : 1152;
 	uint8_t monsense;
 	switch (width) {
 		case 1024: monsense = 0x1; break;

@@ -19,14 +19,23 @@ DEFINE_DEVICE_TYPE(SBUS_MG2, sbus_mg2_device, "sbus_mg2", "Sun MG2 SBus Video")
 sbus_bwtwo_device::sbus_bwtwo_device(const machine_config &mconfig, const device_type &type, const char *tag, device_t *owner, uint32_t clock)
 	: device_t(mconfig, type, tag, owner, clock)
 	, device_sbus_card_interface(mconfig, *this)
-	, m_bwtwo(*this, "bwtwo")
 	, m_rom(*this, "prom")
+	, m_bwtwo(*this, "bwtwo")
+	, m_screen(*this, "screen")
 {
 }
 
 void sbus_bwtwo_device::device_add_mconfig(machine_config &config)
 {
+	// TODO: Allow screen to vary in size.
+	SCREEN(config, m_screen, SCREEN_TYPE_RASTER);
+	m_screen->set_size(1152, 900);
+	m_screen->set_screen_update(m_bwtwo, FUNC(sun_bwtwo_device::screen_update));
+	m_screen->set_visarea(0, 1152-1, 0, 900-1);
+	m_screen->set_refresh_hz(66);
+
 	SUN_BWTWO(config, m_bwtwo, 0);
+	m_bwtwo->set_screen(m_screen);
 }
 
 void sbus_bwtwo_device::device_start()

@@ -16,6 +16,7 @@
 
 
 class sun_bwtwo_device : public device_t
+					   , public device_video_interface
 {
 public:
 	// construction/destruction
@@ -30,19 +31,18 @@ public:
 	uint8_t vram_r(offs_t offset);
 	void vram_w(offs_t offset, uint8_t data);
 
+	uint32_t screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
+
 protected:
 	// device_t overrides
 	virtual void device_add_mconfig(machine_config &config) override;
 	virtual void device_start() override;
 
 private:
-	uint32_t screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
-
 	void control_w(uint8_t data);
 	uint8_t status_r();
 
 	std::unique_ptr<uint8_t[]> m_vram;
-	required_device<screen_device> m_screen;
 	uint32_t m_mono_lut[256][8];
 	uint8_t m_control;
 	bool m_interrupts_enabled;

@@ -38,8 +38,9 @@ protected:
 	uint32_t rom_r(offs_t offset);
 
 private:
-	required_device<sun_bwtwo_device> m_bwtwo;
 	required_memory_region m_rom;
+	required_device<sun_bwtwo_device> m_bwtwo;
+	optional_device<screen_device> m_screen;
 };
 
 
