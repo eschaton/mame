@@ -38,9 +38,15 @@ protected:
 private:
 	uint32_t screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
 
+	void control_w(uint8_t data);
+	uint8_t status_r();
+
 	std::unique_ptr<uint8_t[]> m_vram;
 	required_device<screen_device> m_screen;
 	uint32_t m_mono_lut[256][8];
+	uint8_t m_control;
+	bool m_interrupts_enabled;
+	bool m_video_enabled;
 };
 
 
