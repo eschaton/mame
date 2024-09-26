@@ -30,9 +30,12 @@
 
 DEFINE_DEVICE_TYPE(SUN_BWTWO, sun_bwtwo_device, "bwtwo", "Sun bwtwo Video")
 
+
 sun_bwtwo_device::sun_bwtwo_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
 	: device_t(mconfig, SUN_BWTWO, tag, owner, clock)
+	, device_memory_interface(mconfig, *this)
 	, device_video_interface(mconfig, *this, false)
+	, m_space_config("vram", ENDIANNESS_BIG, 8, 20, 0, address_map_constructor(FUNC(sun_bwtwo_device::sun_bwtwo_vram), this))
 	, m_control(0)
 	, m_interrupts_enabled(false)
 	, m_video_enabled(false)
@@ -85,12 +88,12 @@ void sun_bwtwo_device::regs_w(offs_t offset, uint8_t data)
 
 uint8_t sun_bwtwo_device::vram_r(offs_t offset)
 {
-	return m_vram[offset];
+	return vram_read(offset);
 }
 
 void sun_bwtwo_device::vram_w(offs_t offset, uint8_t data)
 {
-	m_vram[offset] = data;
+	vram_write(offset, data);
 }
 
 void sun_bwtwo_device::device_add_mconfig(machine_config &config)
@@ -99,32 +102,41 @@ void sun_bwtwo_device::device_add_mconfig(machine_config &config)
 
 void sun_bwtwo_device::device_start()
 {
-	m_vram = std::make_unique<uint8_t[]>(0x100000);
-	save_pointer(NAME(m_vram), 0x100000);
+}
 
-	for (int i = 0; i < 0x100; i++) {
-		for (int bit = 7; bit >= 0; bit--) {
-			m_mono_lut[i][7 - bit] = BIT(i, bit) ? 0 : ~0;
-		}
-	}
+device_memory_interface::space_config_vector sun_bwtwo_device::memory_space_config() const
+{
+	return space_config_vector {
+		std::make_pair(0, &m_space_config)
+	};
 }
 
 uint32_t sun_bwtwo_device::screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect)
 {
-	if (m_video_enabled) {
-		const int width = screen.width();
-		const int height = screen.height();
-		uint8_t const *line = &m_vram[0];
+	if (m_video_enabled && has_screen()) {
+		int const width = screen.width();
+		int const height = screen.height();
+		uint32_t const black = 0x000000;
+		uint32_t const white = 0xffffff;
 
 		for (int y = 0; y < height; y++) {
 			uint32_t *scanline = &bitmap.pix(y);
 			for (int x = 0; x < width/8; x++) {
-				std::copy_n(m_mono_lut[*line], 8, scanline);
-				line++;
-				scanline += 8;
+				uint8_t const pixels = vram_read((y * width/8) + x);
+
+				*scanline++ = BIT(pixels, 7) ? black : white;
+				*scanline++ = BIT(pixels, 6) ? black : white;
+				*scanline++ = BIT(pixels, 5) ? black : white;
+				*scanline++ = BIT(pixels, 4) ? black : white;
+				*scanline++ = BIT(pixels, 3) ? black : white;
+				*scanline++ = BIT(pixels, 2) ? black : white;
+				*scanline++ = BIT(pixels, 1) ? black : white;
+				*scanline++ = BIT(pixels, 0) ? black : white;
 			}
 		}
 	} else {
+		// If there's no screen, or video is disabled even though there's a
+		// screen, just indicate that there's no change to the bitmap.
 		return UPDATE_HAS_NOT_CHANGED;
 	}
 
@@ -189,4 +201,21 @@ uint8_t sun_bwtwo_device::status_r()
 	LOGREGISTER("sun_bwtwo: status_r: monitor ID = 0x%02x\n", monid);
 
 	return status;
+}
+
+void sun_bwtwo_device::sun_bwtwo_vram(address_map &map)
+{
+	if (!has_configured_map()) {
+		map(0x00000000, 0x000fffff).ram();
+	}
+}
+
+inline uint8_t sun_bwtwo_device::vram_read(offs_t address)
+{
+	return space().read_byte(address);
+}
+
+inline void sun_bwtwo_device::vram_write(offs_t address, uint8_t data)
+{
+	space().write_byte(address, data);
 }

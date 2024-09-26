@@ -11,11 +11,12 @@
 
 #pragma once
 
-#include "cpu/sparc/sparc.h"
-#include "machine/bankdev.h"
+//#include "cpu/sparc/sparc.h"
+//#include "machine/bankdev.h"
 
 
 class sun_bwtwo_device : public device_t
+					   , public device_memory_interface
 					   , public device_video_interface
 {
 public:
@@ -27,7 +28,6 @@ public:
 	void regs_w(offs_t offset, uint8_t data);
 
 	// VRAM access
-	// TODO: VRAM belongs on hardware using sun_bwtwo_device
 	uint8_t vram_r(offs_t offset);
 	void vram_w(offs_t offset, uint8_t data);
 
@@ -38,12 +38,19 @@ protected:
 	virtual void device_add_mconfig(machine_config &config) override;
 	virtual void device_start() override;
 
+	// device_memory_interface overrides
+	virtual space_config_vector memory_space_config() const override;
+
 private:
 	void control_w(uint8_t data);
 	uint8_t status_r();
 
-	std::unique_ptr<uint8_t[]> m_vram;
-	uint32_t m_mono_lut[256][8];
+	void sun_bwtwo_vram(address_map &map);
+	inline uint8_t vram_read(offs_t address);
+	inline void vram_write(offs_t address, uint8_t data);
+
+	const address_space_config m_space_config;
+
 	uint8_t m_control;
 	bool m_interrupts_enabled;
 	bool m_video_enabled;
