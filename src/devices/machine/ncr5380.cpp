@@ -22,6 +22,7 @@
 #define LOG_DMA      (1U << 5)
 
 //#define VERBOSE (LOG_GENERAL|LOG_REGW|LOG_REGR|LOG_SCSI|LOG_ARB|LOG_DMA)
+//#define LOG_OUTPUT_FUNC printf
 #include "logmacro.h"
 
 DEFINE_DEVICE_TYPE(NCR5380,  ncr5380_device,  "ncr5380",  "NCR 5380 SCSI")
@@ -200,14 +201,14 @@ void ncr5380_device::scsi_ctrl_changed()
 u8 ncr5380_device::csdata_r()
 {
 	u8 const data = scsi_bus->data_r();
-	LOGMASKED(LOG_REGR, "csdata_r 0x%02x (%s)\n", data, machine().describe_context());
+	LOGMASKED(LOG_REGR, "csdata_r 0x%02x (%s)\n", data, machine().describe_context().c_str());
 
 	return data;
 }
 
 void ncr5380_device::odata_w(u8 data)
 {
-	LOGMASKED(LOG_REGW, "odata_w 0x%02x (%s)\n", data, machine().describe_context());
+	LOGMASKED(LOG_REGW, "odata_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
 
 	// drive scsi data
 	if (m_icmd & IC_DBUS)
@@ -218,14 +219,14 @@ void ncr5380_device::odata_w(u8 data)
 
 u8 ncr5380_device::icmd_r()
 {
-	LOGMASKED(LOG_REGR, "icmd_r 0x%02x (%s)\n", m_icmd, machine().describe_context());
+	LOGMASKED(LOG_REGR, "icmd_r 0x%02x (%s)\n", m_icmd, machine().describe_context().c_str());
 
 	return m_icmd;
 }
 
 void ncr5380_device::icmd_w(u8 data)
 {
-	LOGMASKED(LOG_REGW, "icmd_w 0x%02x (%s)\n", data, machine().describe_context());
+	LOGMASKED(LOG_REGW, "icmd_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
 
 	if (!(data & IC_RST))
 	{
@@ -266,14 +267,14 @@ void ncr5380_device::icmd_w(u8 data)
 
 u8 ncr5380_device::mode_r()
 {
-	LOGMASKED(LOG_REGR, "mode_r 0x%02x (%s)\n", m_mode, machine().describe_context());
+	LOGMASKED(LOG_REGR, "mode_r 0x%02x (%s)\n", m_mode, machine().describe_context().c_str());
 
 	return m_mode;
 }
 
 void ncr5380_device::mode_w(u8 data)
 {
-	LOGMASKED(LOG_REGW, "mode_w 0x%02x (%s)\n", data, machine().describe_context());
+	LOGMASKED(LOG_REGW, "mode_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
 
 	if (!(data & MODE_BSYIRQ))
 		m_bas &= ~BAS_BUSYERROR;
@@ -318,14 +319,14 @@ void ncr5380_device::mode_w(u8 data)
 
 u8 ncr5380_device::tcmd_r()
 {
-	LOGMASKED(LOG_REGR, "tcmd_r 0x%02x (%s)\n", m_tcmd, machine().describe_context());
+	LOGMASKED(LOG_REGR, "tcmd_r 0x%02x (%s)\n", m_tcmd, machine().describe_context().c_str());
 
 	return m_tcmd;
 }
 
 void ncr5380_device::tcmd_w(u8 data)
 {
-	LOGMASKED(LOG_REGW, "tcmd_w 0x%02x (%s)\n", data, machine().describe_context());
+	LOGMASKED(LOG_REGW, "tcmd_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
 
 	if (m_has_lbs)
 		m_tcmd = (m_tcmd & TC_LBS) | (data & ~TC_LBS);
@@ -345,13 +346,13 @@ u8 ncr5380_device::csstat_r()
 		(ctrl & S_INP ? ST_IO  : 0) |
 		(ctrl & S_SEL ? ST_SEL : 0);
 
-	LOGMASKED(LOG_REGR, "csstat_r 0x%02x (%s)\n", data, machine().describe_context());
+	LOGMASKED(LOG_REGR, "csstat_r 0x%02x (%s)\n", data, machine().describe_context().c_str());
 	return data;
 }
 
 void ncr5380_device::selen_w(u8 data)
 {
-	LOGMASKED(LOG_REGW, "selen_w 0x%02x (%s)\n", data, machine().describe_context());
+	LOGMASKED(LOG_REGW, "selen_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
 }
 
 u8 ncr5380_device::bas_r()
@@ -362,14 +363,14 @@ u8 ncr5380_device::bas_r()
 		(ctrl & S_ATN ? BAS_ATN : 0) |
 		(ctrl & S_ACK ? BAS_ACK : 0);
 
-	LOGMASKED(LOG_REGR, "bas_r 0x%02x (%s)\n", data, machine().describe_context());
+	LOGMASKED(LOG_REGR, "bas_r 0x%02x (%s)\n", data, machine().describe_context().c_str());
 
 	return data;
 }
 
 void ncr5380_device::sds_w(u8 data)
 {
-	LOGMASKED(LOG_REGW, "sds_w 0x%02x (%s)\n", data, machine().describe_context());
+	LOGMASKED(LOG_REGW, "sds_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
 
 	if (m_mode & MODE_DMA)
 	{
@@ -380,19 +381,19 @@ void ncr5380_device::sds_w(u8 data)
 
 u8 ncr5380_device::idata_r()
 {
-	LOGMASKED(LOG_REGR, "idata_r 0x%02x (%s)\n", m_idata, machine().describe_context());
+	LOGMASKED(LOG_REGR, "idata_r 0x%02x (%s)\n", m_idata, machine().describe_context().c_str());
 
 	return m_idata;
 }
 
 void ncr5380_device::sdtr_w(u8 data)
 {
-	LOGMASKED(LOG_REGW, "sdtr_w 0x%02x (%s)\n", data, machine().describe_context());
+	LOGMASKED(LOG_REGW, "sdtr_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
 }
 
 u8 ncr5380_device::rpi_r()
 {
-	LOGMASKED(LOG_REGR, "rpi_r (%s)\n", machine().describe_context());
+	LOGMASKED(LOG_REGR, "rpi_r (%s)\n", machine().describe_context().c_str());
 
 	m_bas &= ~(BAS_PARITYERROR | BAS_BUSYERROR);
 	set_irq(false);
@@ -402,7 +403,7 @@ u8 ncr5380_device::rpi_r()
 
 void ncr5380_device::sdir_w(u8 data)
 {
-	LOGMASKED(LOG_REGW, "sdir_w 0x%02x (%s)\n", data, machine().describe_context());
+	LOGMASKED(LOG_REGW, "sdir_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
 
 	if ((m_mode & MODE_DMA) && !(m_mode & MODE_TARGET))
 	{

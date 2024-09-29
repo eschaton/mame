@@ -30,6 +30,7 @@
 #define LOG_DMA     (1U << 4)
 
 //#define VERBOSE (LOG_GENERAL|LOG_REGR|LOG_REGW|LOG_COMMAND|LOG_DMA)
+//#define LOG_OUTPUT_FUNC printf
 #include "logmacro.h"
 
 enum master_mode_mask : u8
@@ -318,8 +319,8 @@ u16 am9516_device::data_r()
 	case 0x5a: return m_channel[0].iv;
 
 	default:
-		LOG("undefined register 0x%02 (%s)\n",
-			m_pointer, machine().describe_context());
+		LOG("undefined register 0x%02x (%s)\n",
+			m_pointer, machine().describe_context().c_str());
 		return 0;
 	}
 }
@@ -366,7 +367,7 @@ void am9516_device::data_w(u16 data)
 		// master mode
 	case 0x38:
 		LOGMASKED(LOG_REGW, "master mode 0x%04x (%s)\n",
-			data, machine().describe_context());
+			data, machine().describe_context().c_str());
 		m_mode = data & 0xf;
 		return;
 		// pattern
@@ -383,8 +384,8 @@ void am9516_device::data_w(u16 data)
 	case 0x5a: m_channel[0].iv = data; break;
 
 	default:
-		LOG("undefined register 0x%02 data 0x%04x (%s)\n",
-			m_pointer, data, machine().describe_context());
+		LOG("undefined register 0x%02x data 0x%04x (%s)\n",
+			m_pointer, data, machine().describe_context().c_str());
 		return;
 	}
 
@@ -406,7 +407,7 @@ void am9516_device::data_w(u16 data)
 		};
 
 		LOGMASKED(LOG_REGW, "channel %d %s 0x%04x (%s)\n",
-			!(m_pointer & 2), reg_name[m_pointer >> 2], data, machine().describe_context());
+			!(m_pointer & 2), reg_name[m_pointer >> 2], data, machine().describe_context().c_str());
 	}
 }
 
@@ -417,14 +418,14 @@ void am9516_device::command(u8 data)
 	switch (data & 0xe0)
 	{
 	case 0x00: // reset
-		LOGMASKED(LOG_COMMAND, "reset (%s)\n", machine().describe_context());
+		LOGMASKED(LOG_COMMAND, "reset (%s)\n", machine().describe_context().c_str());
 
 		reset();
 		break;
 
 	case 0x20: // interrupt control
 		LOGMASKED(LOG_COMMAND, "channel %d %s%s%s (%s)\n", BIT(data, 0), BIT(data, 1) ? "set" : "clear",
-			BIT(data, 4) ? " CIE" : "", BIT(data, 2) ? " IP" : "", machine().describe_context());
+			BIT(data, 4) ? " CIE" : "", BIT(data, 2) ? " IP" : "", machine().describe_context().c_str());
 
 		// update channel interrupt enable
 		if (BIT(data, 4))
@@ -444,7 +445,7 @@ void am9516_device::command(u8 data)
 
 	case 0x40: // software request
 		LOGMASKED(LOG_COMMAND, "channel %d %s software request bit (%s)\n",
-			BIT(data, 0), BIT(data, 1) ? "set" : "clear", machine().describe_context());
+			BIT(data, 0), BIT(data, 1) ? "set" : "clear", machine().describe_context().c_str());
 
 		if (BIT(data, 1))
 		{
@@ -457,7 +458,7 @@ void am9516_device::command(u8 data)
 
 	case 0x60: // set/clear flip bit
 		LOGMASKED(LOG_COMMAND, "channel %d %s flip bit (%s)\n",
-			BIT(data, 0), BIT(data, 1) ? "set" : "clear", machine().describe_context());
+			BIT(data, 0), BIT(data, 1) ? "set" : "clear", machine().describe_context().c_str());
 
 		if (BIT(data, 1))
 			ch.cml |= CML_FLIP;
@@ -467,7 +468,7 @@ void am9516_device::command(u8 data)
 
 	case 0x80: // hardware mask
 		LOGMASKED(LOG_COMMAND, "channel %d %s hardware mask bit (%s)\n",
-			BIT(data, 0), BIT(data, 1) ? "set" : "clear", machine().describe_context());
+			BIT(data, 0), BIT(data, 1) ? "set" : "clear", machine().describe_context().c_str());
 
 		if (BIT(data, 1))
 			ch.cmh |= CMH_HM;
@@ -477,14 +478,14 @@ void am9516_device::command(u8 data)
 
 	case 0xa0: // start chain
 		LOGMASKED(LOG_COMMAND, "channel %d start chain (%s)\n",
-			BIT(data, 0), machine().describe_context());
+			BIT(data, 0), machine().describe_context().c_str());
 
 		ch.chain();
 		break;
 
 	default:
 		LOGMASKED(LOG_COMMAND, "channel %d unrecognized command 0x%02x (%s)\n",
-			BIT(data, 0), data, machine().describe_context());
+			BIT(data, 0), data, machine().describe_context().c_str());
 		break;
 	}
 }
