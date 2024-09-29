@@ -29,8 +29,8 @@
 #define LOG_COMMAND (1U << 3)
 #define LOG_DMA     (1U << 4)
 
-//#define VERBOSE (LOG_GENERAL|LOG_REGR|LOG_REGW|LOG_COMMAND|LOG_DMA)
-//#define LOG_OUTPUT_FUNC printf
+#define VERBOSE (LOG_GENERAL|LOG_REGR|LOG_REGW|LOG_COMMAND|LOG_DMA)
+#define LOG_OUTPUT_FUNC printf
 #include "logmacro.h"
 
 enum master_mode_mask : u8

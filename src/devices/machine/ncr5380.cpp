@@ -21,8 +21,8 @@
 #define LOG_ARB      (1U << 4)
 #define LOG_DMA      (1U << 5)
 
-//#define VERBOSE (LOG_GENERAL|LOG_REGW|LOG_REGR|LOG_SCSI|LOG_ARB|LOG_DMA)
-//#define LOG_OUTPUT_FUNC printf
+#define VERBOSE (LOG_GENERAL|LOG_REGW|LOG_REGR|LOG_SCSI|LOG_ARB|LOG_DMA)
+#define LOG_OUTPUT_FUNC printf
 #include "logmacro.h"
 
 DEFINE_DEVICE_TYPE(NCR5380,  ncr5380_device,  "ncr5380",  "NCR 5380 SCSI")
