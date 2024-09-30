@@ -366,7 +366,7 @@ void am9516_device::data_w(u16 data)
 	case 0x36: m_channel[0].boc = data; break;
 		// master mode
 	case 0x38:
-		LOGMASKED(LOG_REGW, "master mode 0x%04x (%s)\n",
+		LOGMASKED(LOG_REGW, "am9516: master mode 0x%04x (%s)\n",
 			data, machine().describe_context().c_str());
 		m_mode = data & 0xf;
 		return;
@@ -406,7 +406,7 @@ void am9516_device::data_w(u16 data)
 			"interrupt vector", nullptr,
 		};
 
-		LOGMASKED(LOG_REGW, "channel %d %s 0x%04x (%s)\n",
+		LOGMASKED(LOG_REGW, "am9516: channel %d %s 0x%04x (%s)\n",
 			!(m_pointer & 2), reg_name[m_pointer >> 2], data, machine().describe_context().c_str());
 	}
 }
@@ -418,13 +418,13 @@ void am9516_device::command(u8 data)
 	switch (data & 0xe0)
 	{
 	case 0x00: // reset
-		LOGMASKED(LOG_COMMAND, "reset (%s)\n", machine().describe_context().c_str());
+		LOGMASKED(LOG_COMMAND, "am9516: reset (%s)\n", machine().describe_context().c_str());
 
 		reset();
 		break;
 
 	case 0x20: // interrupt control
-		LOGMASKED(LOG_COMMAND, "channel %d %s%s%s (%s)\n", BIT(data, 0), BIT(data, 1) ? "set" : "clear",
+		LOGMASKED(LOG_COMMAND, "am9516: channel %d %s%s%s (%s)\n", BIT(data, 0), BIT(data, 1) ? "set" : "clear",
 			BIT(data, 4) ? " CIE" : "", BIT(data, 2) ? " IP" : "", machine().describe_context().c_str());
 
 		// update channel interrupt enable
@@ -444,7 +444,7 @@ void am9516_device::command(u8 data)
 		break;
 
 	case 0x40: // software request
-		LOGMASKED(LOG_COMMAND, "channel %d %s software request bit (%s)\n",
+		LOGMASKED(LOG_COMMAND, "am9516: channel %d %s software request bit (%s)\n",
 			BIT(data, 0), BIT(data, 1) ? "set" : "clear", machine().describe_context().c_str());
 
 		if (BIT(data, 1))
@@ -457,7 +457,7 @@ void am9516_device::command(u8 data)
 		break;
 
 	case 0x60: // set/clear flip bit
-		LOGMASKED(LOG_COMMAND, "channel %d %s flip bit (%s)\n",
+		LOGMASKED(LOG_COMMAND, "am9516: channel %d %s flip bit (%s)\n",
 			BIT(data, 0), BIT(data, 1) ? "set" : "clear", machine().describe_context().c_str());
 
 		if (BIT(data, 1))
@@ -467,7 +467,7 @@ void am9516_device::command(u8 data)
 		break;
 
 	case 0x80: // hardware mask
-		LOGMASKED(LOG_COMMAND, "channel %d %s hardware mask bit (%s)\n",
+		LOGMASKED(LOG_COMMAND, "am9516: channel %d %s hardware mask bit (%s)\n",
 			BIT(data, 0), BIT(data, 1) ? "set" : "clear", machine().describe_context().c_str());
 
 		if (BIT(data, 1))
@@ -477,14 +477,14 @@ void am9516_device::command(u8 data)
 		break;
 
 	case 0xa0: // start chain
-		LOGMASKED(LOG_COMMAND, "channel %d start chain (%s)\n",
+		LOGMASKED(LOG_COMMAND, "am9516: channel %d start chain (%s)\n",
 			BIT(data, 0), machine().describe_context().c_str());
 
 		ch.chain();
 		break;
 
 	default:
-		LOGMASKED(LOG_COMMAND, "channel %d unrecognized command 0x%02x (%s)\n",
+		LOGMASKED(LOG_COMMAND, "am9516: channel %d unrecognized command 0x%02x (%s)\n",
 			BIT(data, 0), data, machine().describe_context().c_str());
 		break;
 	}
@@ -492,13 +492,13 @@ void am9516_device::command(u8 data)
 
 void am9516_device::eop_w(int state)
 {
-	LOGMASKED(LOG_DMA, "eop %s\n", state ? "cleared" : "asserted");
+	LOGMASKED(LOG_DMA, "am9516: eop %s\n", state ? "cleared" : "asserted");
 	m_eop_in_state = !state;
 }
 
 template <unsigned Channel> void am9516_device::dreq_w(int state)
 {
-	LOGMASKED(LOG_DMA, "channel %d dreq %s\n", Channel, state ? "cleared" : "asserted");
+	LOGMASKED(LOG_DMA, "am9516: channel %d dreq %s\n", Channel, state ? "cleared" : "asserted");
 	channel &ch = m_channel[Channel];
 
 	if (!state)
@@ -521,13 +521,13 @@ template <unsigned Channel> void am9516_device::operate(s32 param)
 
 	if (!(m_mode & MM0) || (ch.status & S_SIP))
 	{
-		LOGMASKED(LOG_DMA, "channel %d bus access disabled\n", Channel);
+		LOGMASKED(LOG_DMA, "am9516: channel %d bus access disabled\n", Channel);
 		return;
 	}
 
 	if (!(ch.status & S_HRQ) && !(ch.cmh & CMH_SR))
 	{
-		LOGMASKED(LOG_DMA, "channel %d no request pending\n", Channel);
+		LOGMASKED(LOG_DMA, "am9516: channel %d no request pending\n", Channel);
 		return;
 	}
 
@@ -654,7 +654,7 @@ void am9516_device::complete(unsigned const c, u16 status)
 	ch.status &= ~(S_MCH | S_MCL | S_MC | S_EOP | S_TC);
 	ch.status |= status | S_NAC;
 
-	LOGMASKED(LOG_DMA, "channel %d complete status 0x%04x\n", c, ch.status);
+	LOGMASKED(LOG_DMA, "am9516: channel %d complete status 0x%04x\n", c, ch.status);
 
 	m_eop(0);
 	m_eop(1);
@@ -805,16 +805,16 @@ void am9516_device::channel::reload()
 		|| ((status & S_EOP) && (cml & CML_REOP))
 		|| ((status & S_MC) && (cml & CML_RMC)))
 	{
-		LOGMASKED(LOG_DMA, "reload base to current\n");
+		LOGMASKED(LOG_DMA, "am9516: reload base to current\n");
 		caau = baau;
 		caal = baal;
 		cabu = babu;
 		cabl = babl;
 		coc = boc;
 
-		log_addr(LOG_DMA, "current address a", caau, caal);
-		log_addr(LOG_DMA, "current address b", cabu, cabl);
-		LOGMASKED(LOG_DMA, "current operation count 0x%04x\n", coc);
+		log_addr(LOG_DMA, "am9516: current address a", caau, caal);
+		log_addr(LOG_DMA, "am9516: current address b", cabu, cabl);
+		LOGMASKED(LOG_DMA, "am9516: current operation count 0x%04x\n", coc);
 
 		status &= ~S_NAC;
 	}
@@ -824,7 +824,7 @@ void am9516_device::channel::reload()
 		|| ((status & S_EOP) && (cml & CML_CEOP))
 		|| ((status & S_MC) && (cml & CML_CMC)))
 	{
-		LOGMASKED(LOG_DMA, "reload chain\n");
+		LOGMASKED(LOG_DMA, "am9516: reload chain\n");
 		chain();
 	}
 }
@@ -838,7 +838,7 @@ void am9516_device::channel::chain()
 	// fetch reload word
 	u32 chain_address = address(cau, cal);
 	u16 reload = s.read_word(chain_address) & CC_WM;
-	LOGMASKED(LOG_REGW, "chain address 0x%06x reload word 0x%04x\n", chain_address, reload);
+	LOGMASKED(LOG_REGW, "am9516: chain address 0x%06x reload word 0x%04x\n", chain_address, reload);
 	chain_address += 2;
 
 	// current address a
@@ -847,8 +847,8 @@ void am9516_device::channel::chain()
 		caau = s.read_word(chain_address + 0) & ARU_WM;
 		caal = s.read_word(chain_address + 2);
 
-		LOGMASKED(LOG_REGW, "current address a 0x%04x 0x%04x\n", caau, caal);
-		log_addr(LOG_DMA, "current address a", caau, caal);
+		LOGMASKED(LOG_REGW, "am9516: current address a 0x%04x 0x%04x\n", caau, caal);
+		log_addr(LOG_DMA, "am9516: current address a", caau, caal);
 
 		chain_address += 4;
 	}
@@ -859,8 +859,8 @@ void am9516_device::channel::chain()
 		cabu = s.read_word(chain_address + 0) & ARU_WM;
 		cabl = s.read_word(chain_address + 2);
 
-		LOGMASKED(LOG_REGW, "current address b 0x%04x 0x%04x\n", cabu, cabl);
-		log_addr(LOG_DMA, "current address b", cabu, cabl);
+		LOGMASKED(LOG_REGW, "am9516: current address b 0x%04x 0x%04x\n", cabu, cabl);
+		log_addr(LOG_DMA, "am9516: current address b", cabu, cabl);
 
 		chain_address += 4;
 	}
@@ -870,7 +870,7 @@ void am9516_device::channel::chain()
 	{
 		coc = s.read_word(chain_address);
 
-		LOGMASKED(LOG_DMA, "current operation count 0x%04x\n", coc);
+		LOGMASKED(LOG_DMA, "am9516: current operation count 0x%04x\n", coc);
 
 		chain_address += 2;
 	}
@@ -881,7 +881,7 @@ void am9516_device::channel::chain()
 		baau = s.read_word(chain_address + 0) & ARU_WM;
 		baal = s.read_word(chain_address + 2);
 
-		LOGMASKED(LOG_REGW, "base address a 0x%04x 0x%04x\n", baau, baal);
+		LOGMASKED(LOG_REGW, "am9516: base address a 0x%04x 0x%04x\n", baau, baal);
 
 		chain_address += 4;
 	}
@@ -892,7 +892,7 @@ void am9516_device::channel::chain()
 		babu = s.read_word(chain_address + 0) & ARU_WM;
 		babl = s.read_word(chain_address + 2);
 
-		LOGMASKED(LOG_REGW, "base address b 0x%04x 0x%04x\n", babu, babl);
+		LOGMASKED(LOG_REGW, "am9516: base address b 0x%04x 0x%04x\n", babu, babl);
 
 		chain_address += 4;
 	}
@@ -902,7 +902,7 @@ void am9516_device::channel::chain()
 	{
 		boc = s.read_word(chain_address);
 
-		LOGMASKED(LOG_REGW, "base operation count 0x%04x\n", boc);
+		LOGMASKED(LOG_REGW, "am9516: base operation count 0x%04x\n", boc);
 
 		chain_address += 2;
 	}
@@ -913,7 +913,7 @@ void am9516_device::channel::chain()
 		pattern = s.read_word(chain_address + 0);
 		mask = s.read_word(chain_address + 2);
 
-		LOGMASKED(LOG_REGW, "pattern 0x%04x mask %04x\n", pattern, mask);
+		LOGMASKED(LOG_REGW, "am9516: pattern 0x%04x mask %04x\n", pattern, mask);
 
 		chain_address += 4;
 	}
@@ -923,7 +923,7 @@ void am9516_device::channel::chain()
 	{
 		iv = s.read_word(chain_address);
 
-		LOGMASKED(LOG_REGW, "interrupt vector 0x%04x\n", iv);
+		LOGMASKED(LOG_REGW, "am9516: interrupt vector 0x%04x\n", iv);
 
 		chain_address += 2;
 	}
@@ -934,7 +934,7 @@ void am9516_device::channel::chain()
 		cmh = s.read_word(chain_address + 0) & CMH_WM;
 		cml = s.read_word(chain_address + 2);
 
-		LOGMASKED(LOG_REGW, "channel mode 0x%04x %04x\n", cmh, cml);
+		LOGMASKED(LOG_REGW, "am9516: channel mode 0x%04x %04x\n", cmh, cml);
 		log_mode(LOG_DMA, true);
 
 		chain_address += 4;
@@ -946,7 +946,7 @@ void am9516_device::channel::chain()
 		cau = s.read_word(chain_address + 0) & (ARU_UA | ARU_WC);
 		cal = s.read_word(chain_address + 2);
 
-		LOGMASKED(LOG_REGW, "chain address 0x%04x %04x\n", cau, cal);
+		LOGMASKED(LOG_REGW, "am9516: chain address 0x%04x %04x\n", cau, cal);
 
 		chain_address += 4;
 	}

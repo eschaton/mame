@@ -124,14 +124,14 @@ void ncr5380_device::scsi_ctrl_changed()
 		static char const *const nscsi_phase[] = { "DATA OUT", "DATA IN", "COMMAND", "STATUS", "*", "*", "MESSAGE OUT", "MESSAGE IN" };
 
 		if (ctrl & S_RST)
-			LOGMASKED(LOG_SCSI, "scsi_ctrl_changed 0x%x BUS RESET\n", ctrl);
+			LOGMASKED(LOG_SCSI, "ncr5380: scsi_ctrl_changed 0x%x BUS RESET\n", ctrl);
 		else if ((ctrl & S_BSY) && !(ctrl & S_SEL))
-			LOGMASKED(LOG_SCSI, "scsi_ctrl_changed 0x%x phase %s%s%s\n", ctrl, nscsi_phase[ctrl & S_PHASE_MASK],
+			LOGMASKED(LOG_SCSI, "ncr5380: scsi_ctrl_changed 0x%x phase %s%s%s\n", ctrl, nscsi_phase[ctrl & S_PHASE_MASK],
 				ctrl & S_REQ ? " REQ" : "", ctrl & S_ACK ? " ACK" : "");
 		else if (ctrl & S_BSY)
-			LOGMASKED(LOG_SCSI, "scsi_ctrl_changed 0x%x arbitration/selection\n", ctrl);
+			LOGMASKED(LOG_SCSI, "ncr5380: scsi_ctrl_changed 0x%x arbitration/selection\n", ctrl);
 		else
-			LOGMASKED(LOG_SCSI, "scsi_ctrl_changed 0x%x BUS FREE\n", ctrl);
+			LOGMASKED(LOG_SCSI, "ncr5380: scsi_ctrl_changed 0x%x BUS FREE\n", ctrl);
 	}
 
 	m_bas &= ~BAS_BUSYERROR;
@@ -201,14 +201,14 @@ void ncr5380_device::scsi_ctrl_changed()
 u8 ncr5380_device::csdata_r()
 {
 	u8 const data = scsi_bus->data_r();
-	LOGMASKED(LOG_REGR, "csdata_r 0x%02x (%s)\n", data, machine().describe_context().c_str());
+	LOGMASKED(LOG_REGR, "ncr5380: csdata_r 0x%02x (%s)\n", data, machine().describe_context().c_str());
 
 	return data;
 }
 
 void ncr5380_device::odata_w(u8 data)
 {
-	LOGMASKED(LOG_REGW, "odata_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
+	LOGMASKED(LOG_REGW, "ncr5380: odata_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
 
 	// drive scsi data
 	if (m_icmd & IC_DBUS)
@@ -219,14 +219,14 @@ void ncr5380_device::odata_w(u8 data)
 
 u8 ncr5380_device::icmd_r()
 {
-	LOGMASKED(LOG_REGR, "icmd_r 0x%02x (%s)\n", m_icmd, machine().describe_context().c_str());
+	LOGMASKED(LOG_REGR, "ncr5380: icmd_r 0x%02x (%s)\n", m_icmd, machine().describe_context().c_str());
 
 	return m_icmd;
 }
 
 void ncr5380_device::icmd_w(u8 data)
 {
-	LOGMASKED(LOG_REGW, "icmd_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
+	LOGMASKED(LOG_REGW, "ncr5380: icmd_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
 
 	if (!(data & IC_RST))
 	{
@@ -249,7 +249,7 @@ void ncr5380_device::icmd_w(u8 data)
 				(data & IC_SEL ? S_SEL : 0) |
 				(data & IC_ATN ? S_ATN : 0);
 
-			LOGMASKED(LOG_SCSI, "changing control lines 0x%04x\n", ctrl);
+			LOGMASKED(LOG_SCSI, "ncr5380: changing control lines 0x%04x\n", ctrl);
 			scsi_bus->ctrl_w(scsi_refid, ctrl, mask);
 		}
 	}
@@ -267,14 +267,14 @@ void ncr5380_device::icmd_w(u8 data)
 
 u8 ncr5380_device::mode_r()
 {
-	LOGMASKED(LOG_REGR, "mode_r 0x%02x (%s)\n", m_mode, machine().describe_context().c_str());
+	LOGMASKED(LOG_REGR, "ncr5380: mode_r 0x%02x (%s)\n", m_mode, machine().describe_context().c_str());
 
 	return m_mode;
 }
 
 void ncr5380_device::mode_w(u8 data)
 {
-	LOGMASKED(LOG_REGW, "mode_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
+	LOGMASKED(LOG_REGW, "ncr5380: mode_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
 
 	if (!(data & MODE_BSYIRQ))
 		m_bas &= ~BAS_BUSYERROR;
@@ -319,14 +319,14 @@ void ncr5380_device::mode_w(u8 data)
 
 u8 ncr5380_device::tcmd_r()
 {
-	LOGMASKED(LOG_REGR, "tcmd_r 0x%02x (%s)\n", m_tcmd, machine().describe_context().c_str());
+	LOGMASKED(LOG_REGR, "ncr5380: tcmd_r 0x%02x (%s)\n", m_tcmd, machine().describe_context().c_str());
 
 	return m_tcmd;
 }
 
 void ncr5380_device::tcmd_w(u8 data)
 {
-	LOGMASKED(LOG_REGW, "tcmd_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
+	LOGMASKED(LOG_REGW, "ncr5380: tcmd_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
 
 	if (m_has_lbs)
 		m_tcmd = (m_tcmd & TC_LBS) | (data & ~TC_LBS);
@@ -346,13 +346,13 @@ u8 ncr5380_device::csstat_r()
 		(ctrl & S_INP ? ST_IO  : 0) |
 		(ctrl & S_SEL ? ST_SEL : 0);
 
-	LOGMASKED(LOG_REGR, "csstat_r 0x%02x (%s)\n", data, machine().describe_context().c_str());
+	LOGMASKED(LOG_REGR, "ncr5380: csstat_r 0x%02x (%s)\n", data, machine().describe_context().c_str());
 	return data;
 }
 
 void ncr5380_device::selen_w(u8 data)
 {
-	LOGMASKED(LOG_REGW, "selen_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
+	LOGMASKED(LOG_REGW, "ncr5380: selen_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
 }
 
 u8 ncr5380_device::bas_r()
@@ -363,14 +363,14 @@ u8 ncr5380_device::bas_r()
 		(ctrl & S_ATN ? BAS_ATN : 0) |
 		(ctrl & S_ACK ? BAS_ACK : 0);
 
-	LOGMASKED(LOG_REGR, "bas_r 0x%02x (%s)\n", data, machine().describe_context().c_str());
+	LOGMASKED(LOG_REGR, "ncr5380: bas_r 0x%02x (%s)\n", data, machine().describe_context().c_str());
 
 	return data;
 }
 
 void ncr5380_device::sds_w(u8 data)
 {
-	LOGMASKED(LOG_REGW, "sds_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
+	LOGMASKED(LOG_REGW, "ncr5380: sds_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
 
 	if (m_mode & MODE_DMA)
 	{
@@ -381,19 +381,19 @@ void ncr5380_device::sds_w(u8 data)
 
 u8 ncr5380_device::idata_r()
 {
-	LOGMASKED(LOG_REGR, "idata_r 0x%02x (%s)\n", m_idata, machine().describe_context().c_str());
+	LOGMASKED(LOG_REGR, "ncr5380: idata_r 0x%02x (%s)\n", m_idata, machine().describe_context().c_str());
 
 	return m_idata;
 }
 
 void ncr5380_device::sdtr_w(u8 data)
 {
-	LOGMASKED(LOG_REGW, "sdtr_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
+	LOGMASKED(LOG_REGW, "ncr5380: sdtr_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
 }
 
 u8 ncr5380_device::rpi_r()
 {
-	LOGMASKED(LOG_REGR, "rpi_r (%s)\n", machine().describe_context().c_str());
+	LOGMASKED(LOG_REGR, "ncr5380: rpi_r (%s)\n", machine().describe_context().c_str());
 
 	m_bas &= ~(BAS_PARITYERROR | BAS_BUSYERROR);
 	set_irq(false);
@@ -403,7 +403,7 @@ u8 ncr5380_device::rpi_r()
 
 void ncr5380_device::sdir_w(u8 data)
 {
-	LOGMASKED(LOG_REGW, "sdir_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
+	LOGMASKED(LOG_REGW, "ncr5380: sdir_w 0x%02x (%s)\n", data, machine().describe_context().c_str());
 
 	if ((m_mode & MODE_DMA) && !(m_mode & MODE_TARGET))
 	{
@@ -439,7 +439,7 @@ int ncr5380_device::state_step()
 	case ARB_BUS_FREE:
 		if (!(ctrl & (S_SEL | S_BSY | S_RST)))
 		{
-			LOGMASKED(LOG_ARB, "arbitration: bus free\n");
+			LOGMASKED(LOG_ARB, "ncr5380: arbitration: bus free\n");
 			// FIXME: AIP should only be set when arbitration begins
 			m_icmd |= IC_AIP;
 			m_state = ARB_START;
@@ -447,12 +447,12 @@ int ncr5380_device::state_step()
 		}
 		else
 		{
-			LOGMASKED(LOG_ARB, "arbitration: bus not free\n");
+			LOGMASKED(LOG_ARB, "ncr5380: arbitration: bus not free\n");
 			m_state = IDLE;
 		}
 		break;
 	case ARB_START:
-		LOGMASKED(LOG_ARB, "arbitration: started\n");
+		LOGMASKED(LOG_ARB, "ncr5380: arbitration: started\n");
 		m_icmd |= IC_BSY;
 		m_state = ARB_EVALUATE;
 		delay = 2200;
@@ -465,7 +465,7 @@ int ncr5380_device::state_step()
 		// check if SEL asserted, or if there's a higher ID on the bus
 		if ((ctrl & S_SEL) || (scsi_bus->data_r() & ~((m_odata - 1) | m_odata)))
 		{
-			LOGMASKED(LOG_ARB, "arbitration: lost\n");
+			LOGMASKED(LOG_ARB, "ncr5380: arbitration: lost\n");
 			m_icmd &= ~IC_BSY;
 			m_icmd |= IC_LA;
 
@@ -477,7 +477,7 @@ int ncr5380_device::state_step()
 		}
 		else
 		{
-			LOGMASKED(LOG_ARB, "arbitration: won\n");
+			LOGMASKED(LOG_ARB, "ncr5380: arbitration: won\n");
 			m_state = IDLE;
 		}
 		break;
@@ -488,7 +488,7 @@ int ncr5380_device::state_step()
 			if ((ctrl & S_PHASE_MASK) == (m_tcmd & TC_PHASE))
 			{
 				m_idata = scsi_bus->data_r();
-				LOGMASKED(LOG_DMA, "dma in: 0x%02x\n", m_idata);
+				LOGMASKED(LOG_DMA, "ncr5380: dma in: 0x%02x\n", m_idata);
 
 				m_state = DMA_IN_ACK;
 				set_drq(true);
@@ -521,7 +521,7 @@ int ncr5380_device::state_step()
 		{
 			if ((ctrl & S_PHASE_MASK) == (m_tcmd & TC_PHASE))
 			{
-				LOGMASKED(LOG_DMA, "dma out: 0x%02x\n", m_odata);
+				LOGMASKED(LOG_DMA, "ncr5380: dma out: 0x%02x\n", m_odata);
 
 				m_state = DMA_OUT_ACK;
 
@@ -556,7 +556,7 @@ int ncr5380_device::state_step()
 
 void ncr5380_device::eop_w(int state)
 {
-	LOGMASKED(LOG_DMA, "eop_w %d\n", state);
+	LOGMASKED(LOG_DMA, "ncr5380: eop_w %d\n", state);
 	if (state && (m_mode & MODE_DMA))
 	{
 		m_bas |= BAS_ENDOFDMA;
@@ -600,7 +600,7 @@ void ncr5380_device::scsi_data_w(u8 data)
 
 	if ((m_mode & MODE_TARGET) || (!(ctrl & S_INP) && (ctrl & S_PHASE_MASK) == (m_tcmd & S_PHASE_MASK)))
 	{
-		LOGMASKED(LOG_SCSI, "scsi data 0x%02x\n", data);
+		LOGMASKED(LOG_SCSI, "ncr5380: scsi data 0x%02x\n", data);
 		scsi_bus->data_w(scsi_refid, data);
 	}
 }
@@ -625,7 +625,7 @@ void ncr5380_device::set_drq(bool drq_state)
 {
 	if (drq_state != m_drq_state)
 	{
-		LOGMASKED(LOG_DMA, "set_drq %d\n", drq_state);
+		LOGMASKED(LOG_DMA, "ncr5380: set_drq %d\n", drq_state);
 
 		if (drq_state)
 			m_bas |= BAS_DMAREQUEST;
