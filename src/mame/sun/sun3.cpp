@@ -291,8 +291,15 @@ private:
 	void irqctrl_w(offs_t offset, uint32_t data, uint32_t mem_mask = ~0);
 	uint8_t rtc7170_r(offs_t offset);
 	void rtc7170_w(offs_t offset, uint8_t data);
+	uint16_t fifo_data_r();
+	void fifo_data_w(uint16_t data);
+	uint16_t fifo_count_r();
+	void fifo_count_w(uint16_t data);
 	uint16_t scsictrl_r();
 	void scsictrl_w(uint16_t data);
+
+	void scsiirq_w(int state);
+	void scsidrq_w(int state);
 
 	template <unsigned W, unsigned H>
 	uint32_t bw2_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
@@ -314,6 +321,7 @@ private:
 	uint32_t *m_rom_ptr, *m_ram_ptr;
 	uint8_t *m_idprom_ptr;
 	uint32_t m_enable, m_diag, m_dvma_enable, m_parregs[8], m_irqctrl, m_ecc[4];
+	uint16_t m_fifo_data, m_fifo_count;
 	uint16_t m_scsictrl;
 	uint8_t m_buserr;
 	uint16_t m_bw2_cr;
@@ -327,6 +335,76 @@ private:
 	uint32_t m_cache_tags[0x4000], m_cache_data[0x4000];
 };
 
+
+union sun3_scsictrl {
+	uint16_t word;
+	struct { // information from TME and NetBSD
+#if 0	// big-endian
+		unsigned onboard_dma_active: 1;	// (r)	onboard only
+		unsigned dma_conflict: 1;		// (r)	all but 3/e
+		unsigned dma_bus_error: 1;		// (r)	all but 3/e
+		unsigned vme_modified : 1;		// (r)	VME only
+		unsigned fifo_full: 1;			// (r)	all but 3/e
+		unsigned fifo_empty: 1;			// (r)	all but 3/e
+		unsigned int_ncr5380 : 1;		// (r)
+		unsigned int_dma: 1;			// (r)	all but 3/e
+		unsigned vme_lob_mask: 1;		// (r)	VME only
+		unsigned vme_bpcon: 1;			// (rw) VME only
+		unsigned dma_enable: 1;			// (rw)	all but onboard
+		unsigned dma_send: 1;			// (rw)
+		unsigned int_enable: 1;			// (rw)
+		unsigned reset_fifo: 1;			// (rw)	all but 3/e
+		unsigned sun3e_vcc: 1;			// (r)	3/e only
+		unsigned reset_controller: 1;	// (rw)
+#else	// little-endian
+		unsigned vme_lob_mask: 1;		// (r)	VME only
+		unsigned vme_bpcon: 1;			// (rw) VME only
+		unsigned dma_enable: 1;			// (rw)	all but onboard
+		unsigned dma_send: 1;			// (rw)
+		unsigned int_enable: 1;			// (rw)
+		unsigned reset_fifo: 1;			// (rw)	all but 3/e
+		unsigned sun3e_vcc: 1;			// (r)	3/e only
+		unsigned reset_controller: 1;	// (rw)
+		unsigned onboard_dma_active: 1;	// (r)	onboard only
+		unsigned dma_conflict: 1;		// (r)	all but 3/e
+		unsigned dma_bus_error: 1;		// (r)	all but 3/e
+		unsigned vme_modified : 1;		// (r)	VME only
+		unsigned fifo_full: 1;			// (r)	all but 3/e
+		unsigned fifo_empty: 1;			// (r)	all but 3/e
+		unsigned int_ncr5380 : 1;		// (r)
+		unsigned int_dma: 1;			// (r)	all but 3/e
+#endif
+	} bits;
+};
+
+static void print_scsictrl(const char * const prefix, union sun3_scsictrl udata)
+{
+#if 1
+	printf("%s: " "0x%04x" "\n", prefix, udata.word);
+#else
+	printf("%s {" "\n", prefix);
+#define PRINT_FIELD(fn) printf("\t" #fn ": %d" "\n", udata.bits.fn)
+	PRINT_FIELD(onboard_dma_active);
+	PRINT_FIELD(dma_conflict);
+	PRINT_FIELD(dma_bus_error);
+	PRINT_FIELD(vme_modified);
+	PRINT_FIELD(fifo_full);
+	PRINT_FIELD(fifo_empty);
+	PRINT_FIELD(int_ncr5380);
+	PRINT_FIELD(int_dma);
+	PRINT_FIELD(vme_lob_mask);
+	PRINT_FIELD(vme_bpcon);
+	PRINT_FIELD(dma_enable);
+	PRINT_FIELD(dma_send);
+	PRINT_FIELD(int_enable);
+	PRINT_FIELD(reset_fifo);
+	PRINT_FIELD(sun3e_vcc);
+	PRINT_FIELD(reset_controller);
+#undef PRINT_FIELD
+	printf("}" "\n");
+#endif
+}
+
 static void sun_cdrom(device_t *device)
 {
 	downcast<nscsi_cdrom_device &>(*device).set_block_size(512);
@@ -334,9 +412,32 @@ static void sun_cdrom(device_t *device)
 
 void sun3_state::ncr5380(device_t *device)
 {
-	devcb_base *devcb;
-	(void)devcb;
-//  downcast<ncr5380_device &>(*device).drq_handler().set(FUNC(sun3_state::drq_w));
+	ncr5380_device &sbc = downcast<ncr5380_device &>(*device);
+
+	sbc.irq_handler().set(*this, FUNC(sun3_state::scsiirq_w));
+	sbc.drq_handler().set(m_udc, FUNC(am9516_device::dreq_w<0>)).invert();
+}
+
+void sun3_state::scsiirq_w(int state)
+{
+	printf("scsiirq_w: %d\n", state);
+
+	m_scsictrl |= (state ? 1 : 0) << 9;
+	if (state) {
+		m_maincpu->set_input_line(M68K_IRQ_2, ASSERT_LINE);
+		m_maincpu->set_input_line(M68K_IRQ_2, CLEAR_LINE);
+	}
+}
+
+void sun3_state::scsidrq_w(int state)
+{
+	printf("scsidrq_w: %d\n", state);
+
+	m_scsictrl |= (state ? 1 : 0) << 8;
+	if (state) {
+		m_maincpu->set_input_line(M68K_IRQ_2, ASSERT_LINE);
+		m_maincpu->set_input_line(M68K_IRQ_2, CLEAR_LINE);
+	}
 }
 
 static void scsi_devices(device_slot_interface &device)
@@ -807,6 +908,8 @@ void sun3_state::vmetype1space_map(address_map &map)
 	map(0x00140000, 0x00140007).rw(m_sbc, FUNC(ncr5380_device::read), FUNC(ncr5380_device::write)).umask32(0xffffffff);
 	map(0x00140010, 0x00140011).rw(m_udc, FUNC(am9516_device::data_r), FUNC(am9516_device::data_w));
 	map(0x00140012, 0x00140013).rw(m_udc, FUNC(am9516_device::addr_r), FUNC(am9516_device::addr_w));
+	map(0x00140014, 0x00140015).rw(FUNC(sun3_state::fifo_data_r), FUNC(sun3_state::fifo_data_w));
+	map(0x00140016, 0x00140017).rw(FUNC(sun3_state::fifo_count_r), FUNC(sun3_state::fifo_count_w));
 	map(0x00140018, 0x00140019).rw(FUNC(sun3_state::scsictrl_r), FUNC(sun3_state::scsictrl_w));
 	map(0x001e0000, 0x001e00ff).rw(FUNC(sun3_state::ecc_r), FUNC(sun3_state::ecc_w));
 }
@@ -885,15 +988,59 @@ void sun3_state::rtc7170_w(offs_t offset, uint8_t data)
 	}
 }
 
+uint16_t sun3_state::fifo_data_r()
+{
+	printf("fifo_data_r: 0x%04x\n", m_fifo_data);
+	return m_fifo_data;
+}
+
+void sun3_state::fifo_data_w(uint16_t data)
+{
+	printf("fifo_data_w: 0x%04x\n", data);
+	m_fifo_data = data;
+}
+
+uint16_t sun3_state::fifo_count_r()
+{
+	printf("fifo_count_r: 0x%04x\n", m_fifo_count);
+	return m_fifo_count;
+}
+
+void sun3_state::fifo_count_w(uint16_t data)
+{
+	printf("fifo_count_w: 0x%04x\n", data);
+	m_fifo_count = data;
+}
+
 uint16_t sun3_state::scsictrl_r()
 {
-	return m_scsictrl;
+	union sun3_scsictrl udata;
+	udata.word = m_scsictrl;
+
+	print_scsictrl("scsictrl_r", udata);
+
+	// combine any other state changes into the word
+	//xxx
+
+	return udata.word;
 }
 
 void sun3_state::scsictrl_w(uint16_t data)
 {
-	if (BIT(data ^ m_scsictrl, 0))
-	{
+	union sun3_scsictrl oldval;
+	oldval.word = m_scsictrl;
+
+	union sun3_scsictrl newval;
+	newval.word = data;
+
+	if (oldval.word == newval.word) {
+		printf("scsictrl_w nc" "\n");
+	} else {
+		print_scsictrl("scsictrl_w old", oldval);
+		print_scsictrl("scsictrl_w new", newval);
+	}
+
+	if (oldval.bits.reset_controller || newval.bits.reset_controller) {
 		m_sbc->reset();
 		m_udc->reset();
 	}
@@ -1108,6 +1255,8 @@ void sun3_state::sun3(machine_config &config)
 	NSCSI_CONNECTOR(config, "scsibus:7").option_set("sbc", NCR5380).machine_config([this] (device_t *device) { ncr5380(device); });
 
 	AM9516(config, m_udc, 16_MHz_XTAL / 2);
+	m_udc->flyby_byte_r<0>().set(":scsibus:7:sbc", FUNC(ncr5380_device::dma_r));
+	m_udc->flyby_byte_w<0>().set(":scsibus:7:sbc", FUNC(ncr5380_device::dma_w));
 }
 
 // Sun 3/60
