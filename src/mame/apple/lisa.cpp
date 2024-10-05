@@ -120,6 +120,24 @@ void lisa_state::lisa(machine_config &config)
 	m_via0->irq_handler().set(FUNC(lisa_state::COPS_via_irq_func));
 
 	MOS6522(config, m_via1, 20.37504_MHz_XTAL / 40); // CPU E clock (nominally 500 kHz)
+	/* PA[0..7]: i/o: parallel port DD[0..7], via 74LS245 bus transceiver
+	   PB[5], CB[2]: involved in parallel port /PARITY checking, via a 74LS244 buffer
+	   PB[0]   in: OCD, via 74LS244
+	   PB[1]   in: parallel port BSY, via 74LS244
+	   PB[4]  out: parallel port /CMD, via 74LS244
+	   CA[2]  out: parallel port /PSTRB, via 74LS244
+	   CA[1]  ???: connected to PB[1]
+	   PB[3]  out: parallel port DR/W, via 74LS244
+	   	     also: parallel port 74LS245 bus transceiver direction
+	   PB[2]  out: parallel port buffer & transceiver enable
+	   PB[7]  ???: WCNT
+	   PB[6]  ???: DISK DIAG
+	   CS[1]   in: pull up
+	   /CS[2]  in: /DSKPT
+	   READ    in: READ
+	   RS[0..3] in: A3[..6]
+	   D[0..7] i/o: D[0..7]
+	 */
 
 	SCC8530(config, m_scc, 7833600);
 }
