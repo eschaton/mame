@@ -10,6 +10,10 @@ class flip_flop_jk
 {
 public:
 	flip_flop_jk()
+		: m_j(false)
+		, m_k(true)
+		, m_clk(false)
+		, m_q(false)
 	{}
 
 	void set_q_cb(std::function<void(bool)> cb) {
