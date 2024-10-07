@@ -13,6 +13,7 @@
 
 #include "cpu/m6502/m6504.h"
 #include "cpu/m68000/m68000.h"
+#include "machine/74109.h"
 #include "machine/74259.h"
 #include "machine/6522via.h"
 #include "machine/6522via.h"
@@ -20,6 +21,7 @@
 #include "machine/applefdintf.h"
 #include "machine/iwm.h"
 #include "machine/nvram.h"
+#include "profile.h"
 #include "sound/spkrdev.h"
 #include "emupal.h"
 #include "screen.h"
@@ -99,7 +101,6 @@ struct lisa_features_t
 	bool has_mac_xl_video;          /* modified video for MacXL */
 };
 
-
 class lisa_state : public driver_device
 {
 public:
@@ -127,7 +128,9 @@ public:
 		m_io_mouse_x(*this, "MOUSE_X"),
 		m_io_mouse_y(*this, "MOUSE_Y"),
 		m_palette(*this, "palette"),
-		m_screen(*this, "screen")
+		m_screen(*this, "screen"),
+		m_parallel(*this, "parallel"),
+		m_parityff(*this, "parity")
 	{ }
 
 	void lisa(machine_config &config);
@@ -165,6 +168,9 @@ private:
 
 	required_device<palette_device> m_palette;
 	required_device<screen_device> m_screen;
+
+	required_device<profile_connector> m_parallel;
+	required_device<ttl74109_device> m_parityff;
 
 	emu_timer *m_cops_cmd_timer = nullptr;
 	uint8_t *m_ram_ptr = nullptr;

@@ -132,12 +132,14 @@ void lisa_state::lisa(machine_config &config)
 	   PB[2]  out: parallel port buffer & transceiver enable
 	   PB[7]  ???: WCNT
 	   PB[6]  ???: DISK DIAG
-	   CS[1]   in: pull up
-	   /CS[2]  in: /DSKPT
-	   READ    in: READ
-	   RS[0..3] in: A3[..6]
-	   D[0..7] i/o: D[0..7]
 	 */
+	m_via1->writepa_handler().set(m_parallel, FUNC(profile_connector::host_w));
+	m_via1->readpa_handler().set(m_parallel, FUNC(profile_connector::host_r));
+	//xxx finish wiring up
+	//xxx don't forget the flip-flop
+
+	PROFILE_CONNECTOR(config, m_parallel, 0);
+	//xxx wire up the connector to VIA1
 
 	SCC8530(config, m_scc, 7833600);
 }
