@@ -242,6 +242,18 @@ end
 
 ---------------------------------------------------
 --
+--@src/devices/machine/flip_flop_jk.h,MACHINES["FLIP_FLOP_JK"] = true
+---------------------------------------------------
+
+if (MACHINES["FLIP_FLOP_JK"]~=null) then
+	files {
+		MAME_DIR .. "src/devices/machine/flip_flop_jk.h",
+	}
+end
+
+
+---------------------------------------------------
+--
 --@src/devices/machine/gayle.h,MACHINES["GAYLE"] = true
 ---------------------------------------------------
 
@@ -458,6 +470,18 @@ if (MACHINES["TTL7404"]~=null) then
 	files {
 		MAME_DIR .. "src/devices/machine/7404.cpp",
 		MAME_DIR .. "src/devices/machine/7404.h",
+	}
+end
+
+---------------------------------------------------
+--
+--@src/devices/machine/74109.h,MACHINES["TTL74109"] = true
+---------------------------------------------------
+
+if (MACHINES["TTL74109"]~=null) then
+	files {
+		MAME_DIR .. "src/devices/machine/74109.cpp",
+		MAME_DIR .. "src/devices/machine/74109.h",
 	}
 end
 
