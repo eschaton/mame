@@ -38995,6 +38995,11 @@ u220                            //
 @source:rolm/r9751.cpp
 r9751                           // ROLM 9751 phone system
 
+@source:rosco/rosco_m68k.cpp    // (c) 2020 The Really Old-School Company Limited
+rosco_m68k_010                  // rosco_m68k Classic V2
+rosco_m68k_020                  // rosco_m68k Classic V2 020
+rosco_m68k_030                  // rosco_m68k Classic V2 030
+
 @source:sage/sage2.cpp
 sage2
 
