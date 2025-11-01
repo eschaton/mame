@@ -28943,6 +28943,11 @@ rs2030
 rc3230
 rs3230
 
+@source:mips/mips_r2400.cpp
+m120_5
+m120_3
+rc3240
+
 @source:misc/39in1.cpp
 19in1
 39in1
