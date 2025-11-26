@@ -29,7 +29,7 @@ class pmagb_ba_device : public device_t
 					  , public device_tc_card_interface
 {
 public:
-	pmagb_ba_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
+	pmagb_ba_device(const machine_config &mconfig, const char *tag, device_t *owner, u32 clock)
 		: device_t(mconfig, PMAGB_BA, tag, owner, clock)
 		, device_tc_card_interface(mconfig, *this)
 		, m_screen(*this, "screen")
@@ -50,10 +50,10 @@ protected:
 private:
 	void mem_map(address_map &map) override ATTR_COLD;
 
-	uint32_t screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
+	u32 screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
 
-	uint32_t cfb_r(offs_t offset);
-	void cfb_w(offs_t offset, uint32_t data, uint32_t mem_mask = ~0);
+	u32 cfb_r(offs_t offset);
+	void cfb_w(offs_t offset, u32 data, u32 mem_mask = ~0);
 
 	required_device<screen_device> m_screen;
 	required_device<decsfb_device> m_sfb;
@@ -79,31 +79,9 @@ void pmagb_ba_device::device_add_mconfig(machine_config &config)
 	m_screen->set_screen_update(FUNC(pmagb_ba_device::screen_update));
 
 	DECSFB(config, m_sfb, 25'000'000);  // clock based on white paper which quotes "40ns" gate array cycle times
-//  m_sfb->int_cb().set(FUNC(dec_ioga_device::slot0_irq_w));
+	m_sfb->int_cb().set(FUNC(device_tc_card_interface::int_w));
 
 	BT459(config, m_bt459, 83'020'800);
-
-#if 0
-	K1801VP128(config, m_fdc, XTAL(4'000'000));
-	m_fdc->ds_in_callback().set(
-			[] (uint16_t data)
-			{
-				switch (data & 15)
-				{
-					case 1: return 0;
-					case 2: return 1;
-					case 4: return 2;
-					case 8: return 3;
-					default: return -1;
-				}
-			});
-	FLOPPY_CONNECTOR(config, "fdc:0", bk_floppies, "525qd", bk_samara_device::floppy_formats);
-	FLOPPY_CONNECTOR(config, "fdc:1", bk_floppies, "525qd", bk_samara_device::floppy_formats);
-	FLOPPY_CONNECTOR(config, "fdc:2", bk_floppies, "525qd", bk_samara_device::floppy_formats);
-	FLOPPY_CONNECTOR(config, "fdc:3", bk_floppies, "525qd", bk_samara_device::floppy_formats);
-
-	ATA_INTERFACE(config, m_ata).options(ata_devices, "hdd", nullptr, false);
-#endif
 }
 
 const tiny_rom_entry *pmagb_ba_device::device_rom_region() const
@@ -124,15 +102,15 @@ void pmagb_ba_device::mem_map(address_map &map)
 	map(0x10300000, 0x103fffff).rw(m_sfb, FUNC(decsfb_device::vram_r), FUNC(decsfb_device::vram_w));
 }
 
-uint32_t pmagb_ba_device::screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect)
+u32 pmagb_ba_device::screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect)
 {
 	m_bt459->screen_update(screen, bitmap, cliprect, (uint8_t *)m_sfb->get_vram());
 	return 0;
 }
 
-uint32_t pmagb_ba_device::cfb_r(offs_t offset)
+u32 pmagb_ba_device::cfb_r(offs_t offset)
 {
-	uint32_t const addr = offset << 2;
+	u32 const addr = offset << 2;
 
 	//logerror("cfb_r: reading at %x\n", addr);
 
@@ -152,9 +130,9 @@ uint32_t pmagb_ba_device::cfb_r(offs_t offset)
 	return 0xffffffff;
 }
 
-void pmagb_ba_device::cfb_w(offs_t offset, uint32_t data, uint32_t mem_mask)
+void pmagb_ba_device::cfb_w(offs_t offset, u32 data, u32 mem_mask)
 {
-	uint32_t const addr = offset << 2;
+	u32 const addr = offset << 2;
 
 	if ((addr >= 0x100000) && (addr < 0x100200))
 	{

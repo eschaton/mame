@@ -23,6 +23,8 @@ class device_tc_card_interface : public device_interface
 public:
 	// TURBOchannel interface
 
+	void int_w(int state) { m_out_int_cb(state); }
+
 protected:
 	// construction/destruction
 	device_tc_card_interface(const machine_config &mconfig, device_t &device);
@@ -31,8 +33,6 @@ protected:
 
 	virtual void install_device() { }
 	virtual void mem_map(address_map &map) = 0;
-
-	void int_w(int state) { m_out_int_cb(state); }
 
 	tc_device *m_bus;
 
@@ -51,12 +51,12 @@ public:
 	// construction/destruction
 	template <typename T>
 	tc_device(const machine_config &mconfig, const char *tag, device_t *owner, T &&cputag, int spacenum)
-		: tc_device(mconfig, tag, owner, (uint32_t)0)
+		: tc_device(mconfig, tag, owner, (u32)0)
 	{
 		set_cputag(std::forward<T>(cputag), spacenum);
 	}
 
-	tc_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
+	tc_device(const machine_config &mconfig, const char *tag, device_t *owner, u32 clock);
 
 	~tc_device();
 
@@ -73,8 +73,8 @@ public:
 		m_space->install_device(addrstart, addrend, device, map, unitmask);
 	}
 
-	uint16_t read(offs_t offset, uint16_t mem_mask = ~0);
-	void write(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
+	u32 read(offs_t offset, u32 mem_mask = ~0);
+	void write(offs_t offset, u32 data, u32 mem_mask = ~0);
 
 	const address_space_config m_program_config;
 
@@ -107,11 +107,14 @@ public:
 		set_default_option(dflt);
 		set_fixed(false);
 	}
-	tc_slot_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
+	tc_slot_device(const machine_config &mconfig, const char *tag, device_t *owner, u32 clock);
 
 	auto int_cb() { return m_out_int_cb.bind(); }
 
 	void int_w(int state) { m_out_int_cb(state); }
+
+	u32 read(offs_t offset, u32 mem_mask = ~0);
+	void write(offs_t offset, u32 data, u32 mem_mask = ~0);
 
 protected:
 	// device_t implementation

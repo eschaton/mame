@@ -32,7 +32,7 @@ device_tc_card_interface::device_tc_card_interface(const machine_config &mconfig
 }
 
 
-tc_slot_device::tc_slot_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
+tc_slot_device::tc_slot_device(const machine_config &mconfig, const char *tag, device_t *owner, u32 clock)
 	: device_t(mconfig, TC_SLOT, tag, owner, clock)
 	, device_slot_interface(mconfig, *this)
 	, m_card(nullptr)
@@ -40,7 +40,6 @@ tc_slot_device::tc_slot_device(const machine_config &mconfig, const char *tag, d
 	, m_out_int_cb(*this)
 {
 }
-
 
 void tc_slot_device::device_start()
 {
@@ -55,7 +54,7 @@ void tc_slot_device::device_reset()
 }
 
 
-tc_device::tc_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
+tc_device::tc_device(const machine_config &mconfig, const char *tag, device_t *owner, u32 clock)
 	: device_t(mconfig, TC, tag, owner, clock)
 	, device_memory_interface(mconfig, *this)
 	, m_program_config("a32", ENDIANNESS_LITTLE, 32, 32, 0, address_map_constructor())
@@ -90,12 +89,12 @@ void tc_device::add_card(device_tc_card_interface &card)
 	card.install_device();
 }
 
-uint16_t tc_device::read(offs_t offset, uint16_t mem_mask)
+u32 tc_device::read(offs_t offset, u32 mem_mask)
 {
 	return m_space->read_word(offset, mem_mask);
 }
 
-void tc_device::write(offs_t offset, uint16_t data, uint16_t mem_mask)
+void tc_device::write(offs_t offset, u32 data, u32 mem_mask)
 {
 	m_space->write_word(offset, data, mem_mask);
 }
