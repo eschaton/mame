@@ -65,6 +65,7 @@
 #include "bus/nscsi/cd.h"
 #include "bus/nscsi/hd.h"
 #include "bus/rs232/rs232.h"
+#include "bus/tc/tc.h"
 
 #include "screen.h"
 
@@ -76,6 +77,7 @@ public:
 	kn02ba_state(const machine_config &mconfig, device_type type, const char *tag)
 		: driver_device(mconfig, type, tag)
 		, m_cpu(*this, "cpu")
+		, m_tc(*this, "tc")
 		, m_screen(*this, "screen")
 		, m_sfb(*this, "sfb")
 		, m_lk201(*this, "lk201")
@@ -106,6 +108,7 @@ private:
 	uint32_t screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
 
 	required_device<mips1_device_base> m_cpu;
+	required_device<tc_device> m_tc;
 	required_device<screen_device> m_screen;
 	optional_device<decsfb_device> m_sfb;
 	optional_device<lk201_device> m_lk201;
@@ -232,6 +235,12 @@ void kn02ba_state::kn02ba(machine_config &config, u32 clock)
 	m_cpu->set_fpu(mips1_device_base::MIPS_R3010Av4);
 	m_cpu->in_brcond<0>().set_constant(1);
 	m_cpu->set_addrmap(AS_PROGRAM, &kn02ba_state::map);
+
+	TC(config, m_tc, 12'500'000);
+	m_tc->set_space(m_cpu, AS_PROGRAM);
+	TC_SLOT(config, "tc" ":0", tc_cards, nullptr);
+	TC_SLOT(config, "tc" ":1", tc_cards, nullptr);
+	TC_SLOT(config, "tc" ":2", tc_cards, nullptr);
 
 	SCREEN(config, m_screen, SCREEN_TYPE_RASTER);
 	m_screen->set_raw(130000000, 1704, 32, (1280+32), 1064, 3, (1024+3));

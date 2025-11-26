@@ -1300,6 +1300,19 @@ end
 
 ---------------------------------------------------
 --
+--@src/devices/bus/tc/tc.h,BUSES["TC"] = true
+---------------------------------------------------
+
+if (BUSES["TC"]~=null) then
+	files {
+		MAME_DIR .. "src/devices/bus/tc/tc.cpp",
+		MAME_DIR .. "src/devices/bus/tc/tc.h",
+	}
+end
+
+
+---------------------------------------------------
+--
 --@src/devices/bus/dmv/dmvbus.h,BUSES["DMV"] = true
 ---------------------------------------------------
 
