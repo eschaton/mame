@@ -50,7 +50,6 @@
 
 #include "decioga.h"
 #include "lk201.h"
-#include "sfb.h"
 
 #include "cpu/mips/mips1.h"
 
@@ -61,6 +60,7 @@
 #include "machine/ram.h"
 #include "machine/z80scc.h"
 #include "video/bt459.h"
+#include "video/decsfb.h"
 
 #include "bus/nscsi/cd.h"
 #include "bus/nscsi/hd.h"

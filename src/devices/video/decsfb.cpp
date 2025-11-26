@@ -17,7 +17,7 @@
  */
 
 #include "emu.h"
-#include "sfb.h"
+#include "decsfb.h"
 
 #define MODE_SIMPLE     0
 #define MODE_OPAQUESTIPPLE  1
