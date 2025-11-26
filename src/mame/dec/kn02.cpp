@@ -238,9 +238,12 @@ void kn02ba_state::kn02ba(machine_config &config, u32 clock)
 
 	TC(config, m_tc, 12'500'000);
 	m_tc->set_space(m_cpu, AS_PROGRAM);
-	TC_SLOT(config, "tc" ":0", tc_cards, nullptr);
-	TC_SLOT(config, "tc" ":1", tc_cards, nullptr);
-	TC_SLOT(config, "tc" ":2", tc_cards, nullptr);
+	tc_slot_device &tc_slot0 = TC_SLOT(config, "tc" ":0", tc_cards, nullptr);
+	tc_slot_device &tc_slot1 = TC_SLOT(config, "tc" ":1", tc_cards, nullptr);
+	tc_slot_device &tc_slot2 = TC_SLOT(config, "tc" ":2", tc_cards, nullptr);
+	tc_slot0.int_cb().set_inputline(m_cpu, INPUT_LINE_IRQ0);
+	tc_slot1.int_cb().set_inputline(m_cpu, INPUT_LINE_IRQ1);
+	tc_slot2.int_cb().set_inputline(m_cpu, INPUT_LINE_IRQ2);
 
 	SCREEN(config, m_screen, SCREEN_TYPE_RASTER);
 	m_screen->set_raw(130000000, 1704, 32, (1280+32), 1064, 3, (1024+3));

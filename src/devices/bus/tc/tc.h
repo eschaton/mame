@@ -29,14 +29,23 @@ protected:
 
 	virtual void device_reset() { }
 
-	virtual void install_device() { };
+	virtual void install_device() { }
 	virtual void mem_map(address_map &map) = 0;
 
+	void int_w(int state) { m_out_int_cb(state); }
+
 	tc_device *m_bus;
+
+private:
+	// This is for tc_device's use; the slot has the interrupt callback
+	// used by the system implementation.
+	auto int_cb() { return m_out_int_cb.bind(); }
+
+	devcb_write_line m_out_int_cb;
 };
 
 class tc_device : public device_t
-				   , public device_memory_interface
+				, public device_memory_interface
 {
 public:
 	// construction/destruction
@@ -58,15 +67,11 @@ public:
 	virtual space_config_vector memory_space_config() const override;
 	address_space &program_space() const { return *m_space; }
 
-	auto int_callback() { return m_out_int_cb.bind(); }
-
 	void add_card(device_tc_card_interface &card);
 	template<typename T> void install_device(offs_t addrstart, offs_t addrend, T &device, void (T::*map)(class address_map &map), u32 unitmask = ~u32(0))
 	{
 		m_space->install_device(addrstart, addrend, device, map, unitmask);
 	}
-
-	void int_w(int state) { m_out_int_cb(state); }
 
 	uint16_t read(offs_t offset, uint16_t mem_mask = ~0);
 	void write(offs_t offset, uint16_t data, uint16_t mem_mask = ~0);
@@ -85,13 +90,11 @@ protected:
 private:
 	using card_vector = std::vector<std::reference_wrapper<device_tc_card_interface>>;
 
-	devcb_write_line m_out_int_cb;
-
 	card_vector m_device_list;
 };
 
 class tc_slot_device : public device_t
-						, public device_slot_interface
+					 , public device_slot_interface
 {
 public:
 	// construction/destruction
@@ -106,6 +109,10 @@ public:
 	}
 	tc_slot_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
 
+	auto int_cb() { return m_out_int_cb.bind(); }
+
+	void int_w(int state) { m_out_int_cb(state); }
+
 protected:
 	// device_t implementation
 	virtual void device_start() override ATTR_COLD;
@@ -115,6 +122,8 @@ protected:
 
 private:
 	required_device<tc_device> m_bus;
+
+	devcb_write_line m_out_int_cb;
 };
 
 

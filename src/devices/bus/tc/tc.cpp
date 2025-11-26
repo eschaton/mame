@@ -27,6 +27,7 @@ DEFINE_DEVICE_TYPE(TC_SLOT, tc_slot_device, "tc_slot", "DEC TURBOchannel slot")
 device_tc_card_interface::device_tc_card_interface(const machine_config &mconfig, device_t &device)
 	: device_interface(device, "tc")
 	, m_bus(nullptr)
+	, m_out_int_cb(*this)
 {
 }
 
@@ -36,6 +37,7 @@ tc_slot_device::tc_slot_device(const machine_config &mconfig, const char *tag, d
 	, device_slot_interface(mconfig, *this)
 	, m_card(nullptr)
 	, m_bus(*this, DEVICE_SELF_OWNER)
+	, m_out_int_cb(*this)
 {
 }
 
@@ -58,7 +60,6 @@ tc_device::tc_device(const machine_config &mconfig, const char *tag, device_t *o
 	, device_memory_interface(mconfig, *this)
 	, m_program_config("a32", ENDIANNESS_LITTLE, 32, 32, 0, address_map_constructor())
 	, m_space(*this, finder_base::DUMMY_TAG, -1)
-	, m_out_int_cb(*this)
 {
 }
 
