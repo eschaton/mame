@@ -10,9 +10,13 @@
 
 #include "tc.h"
 
+// Video Cards
+#include "pmagb_ba.h"
+
 
 void tc_cards(device_slot_interface &device)
 {
+	device.option_add("pmagb_ba", PMAGB_BA);
 }
 
 

@@ -1307,6 +1307,8 @@ if (BUSES["TC"]~=null) then
 	files {
 		MAME_DIR .. "src/devices/bus/tc/tc.cpp",
 		MAME_DIR .. "src/devices/bus/tc/tc.h",
+		MAME_DIR .. "src/devices/bus/tc/pmagb_ba.cpp",
+		MAME_DIR .. "src/devices/bus/tc/pmagb_ba.h",
 	}
 end
 
