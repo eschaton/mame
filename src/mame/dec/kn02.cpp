@@ -67,6 +67,11 @@
 
 #include "screen.h"
 
+#define VERBOSE         (LOG_GENERAL)
+#define LOG_OUTPUT_FUNC printf
+
+#include "logmacro.h"
+
 namespace {
 
 class kn02ba_state : public driver_device
@@ -148,15 +153,6 @@ void kn02ba_state::map(address_map &map)
 	map(0x1c200000, 0x1c2000ff).rw(m_rtc, FUNC(mc146818_device::read_direct), FUNC(mc146818_device::write_direct)).umask32(0x000000ff);
 	map(0x1c300000, 0x1c30003f).m(m_asc, FUNC(ncr53c94_device::map)).umask32(0x000000ff);
 	map(0x1fc00000, 0x1fc3ffff).rom().region("user1", 0);
-
-// 	tc_slot_device &tc_slot0 = TC_SLOT(config, "tc" ":0", tc_cards, "pmagb_ba");
-// 	tc_slot_device &tc_slot1 = TC_SLOT(config, "tc" ":1", tc_cards, nullptr);
-// 	tc_slot_device &tc_slot2 = TC_SLOT(config, "tc" ":2", tc_cards, nullptr);
-// 	map(0x10000000, 0x13ffffff).rw("tc:0", FUNC(tc_device::read), FUNC(tc_device::write));
-// 	map(0x14000000, 0x17ffffff).m("tc:1");
-// 	map(0x18000000, 0x1bffffff).m("tc:2");
-// 	map(0x10000000, 0x13ffffff).rw(m_tcslot[0], FUNC(tc_slot_device::read), FUNC(tc_slot_device::write));
-
 }
 
 /***************************************************************************
@@ -179,16 +175,17 @@ void kn02ba_state::kn02ba(machine_config &config, u32 clock)
 
 	// The DECstation 5000 Model 100 series has three TURBOchannel
 	// slots, 0 through 2, plus a virtual slot 3 for system board
-	// peripherals.
+	// peripherals. These run at 12.5 MHz.
 	//
-	// These are mapped to the following addresses and interrupts,
+	// The slots are mapped to the following addresses and interrupts,
 	// according to "TURBOchannel System Parameters" (EK-TCAAB-SP-005):
 	//
 	// - 0: 0x10000000 CPU interrupt 0
 	// - 1: 0x14000000 CPU interrupt 1
 	// - 2: 0x18000000 CPU interrupt 2
-	// - 3: 0x1c000000 no directly corresponding interrupt
+	// - 3: 0x1c000000 no directly corresponding interrupt, no tc_slot_device
 
+	LOG("KN02: Will configure TC slots\n");
 	TC(config, m_tc, 12'500'000);
 	m_tc->set_space(m_cpu, AS_PROGRAM);
 	m_tcslot[0] = TC_SLOT(config, "tc" ":0", tc_cards, "pmagb_ba");
@@ -197,6 +194,10 @@ void kn02ba_state::kn02ba(machine_config &config, u32 clock)
 	m_tcslot[0]->int_cb().set_inputline(m_cpu, INPUT_LINE_IRQ0);
 	m_tcslot[1]->int_cb().set_inputline(m_cpu, INPUT_LINE_IRQ1);
 	m_tcslot[2]->int_cb().set_inputline(m_cpu, INPUT_LINE_IRQ2);
+	m_tcslot[0]->set_address_range(0x10000000, 0x13ffffff);
+	m_tcslot[1]->set_address_range(0x14000000, 0x17ffffff);
+	m_tcslot[2]->set_address_range(0x18000000, 0x1bffffff);
+	LOG("KN02: Did configure TC slots\n");
 
 	AM79C90(config, m_lance, XTAL(12'500'000));
 	m_lance->intr_out().set("ioga", FUNC(dec_ioga_device::lance_irq_w));

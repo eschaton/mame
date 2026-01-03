@@ -14,6 +14,7 @@
 #define LOG_LANCE_DMA   (1U << 2)
 
 #define VERBOSE (LOG_DMA|LOG_LANCE_DMA)
+#define LOG_OUTPUT_FUNC printf
 
 #include "logmacro.h"
 

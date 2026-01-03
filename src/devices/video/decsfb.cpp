@@ -29,7 +29,8 @@
 #define LOG_REG     (1U << 1)
 #define LOG_IRQ     (1U << 2)
 
-//#define VERBOSE (LOG_GENERAL|LOG_REG||LOG_IRQ)
+#define VERBOSE (LOG_GENERAL|LOG_REG||LOG_IRQ)
+#define LOG_OUTPUT_FUNC printf
 
 #include "logmacro.h"
 

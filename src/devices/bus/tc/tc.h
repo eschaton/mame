@@ -2,7 +2,7 @@
 // copyright-holders:Chris Hanson
 /**********************************************************************
 
-    DEC TURBOchannel emulation (skeleton)
+    DEC TURBOchannel emulation
 
 **********************************************************************/
 
@@ -15,6 +15,7 @@
 #include <vector>
 
 class tc_device;
+class tc_slot_device;
 
 class device_tc_card_interface : public device_interface
 {
@@ -29,18 +30,21 @@ protected:
 	// construction/destruction
 	device_tc_card_interface(const machine_config &mconfig, device_t &device);
 
-	virtual void device_reset() { }
+	void install_device(tc_slot_device *slot) {
+		m_slot = slot;
+	}
 
-	virtual void install_device() { }
-	virtual void mem_map(address_map &map) = 0;
-
-	tc_device *m_bus;
+	tc_device &tc() { return *m_bus; }
+	tc_slot_device &slot() { return *m_slot; }
 
 private:
-	// This is for tc_device's use; the slot has the interrupt callback
-	// used by the system implementation.
-	auto int_cb() { return m_out_int_cb.bind(); }
+	tc_device *m_bus;
+	tc_slot_device *m_slot;
 
+	// This is for tc_device's use: The slot itself has the interrupt
+	// callback that is used by the system implementation, since the
+	// mapping can be different on every system.
+	auto int_cb() { return m_out_int_cb.bind(); }
 	devcb_write_line m_out_int_cb;
 };
 
@@ -67,14 +71,16 @@ public:
 	virtual space_config_vector memory_space_config() const override;
 	address_space &program_space() const { return *m_space; }
 
-	void add_card(device_tc_card_interface &card);
-	template<typename T> void install_device(offs_t addrstart, offs_t addrend, T &device, void (T::*map)(class address_map &map), u32 unitmask = ~u32(0))
+	void add_card(device_tc_card_interface &card, tc_slot_device &slot);
+
+	template<typename T>
+	void install_device(offs_t addrstart, offs_t addrend, T &device, void (T::*map)(class address_map &map), u32 unitmask = ~u32(0))
 	{
 		m_space->install_device(addrstart, addrend, device, map, unitmask);
 	}
 
-	u32 read(offs_t offset, u32 mem_mask = ~0);
-	void write(offs_t offset, u32 data, u32 mem_mask = ~0);
+	template <typename T>
+	void install_map(T &device, void (T::*map)(address_map &map));
 
 	const address_space_config m_program_config;
 
@@ -113,8 +119,13 @@ public:
 
 	void int_w(int state) { m_out_int_cb(state); }
 
-	u32 read(offs_t offset, u32 mem_mask = ~0);
-	void write(offs_t offset, u32 data, u32 mem_mask = ~0);
+	offs_t get_addrstart() const { return m_addrstart; }
+	offs_t get_addrend() const { return m_addrend; }
+
+	void set_address_range(offs_t addrstart, offs_t addrend) {
+		m_addrstart = addrstart;
+		m_addrend = addrend;
+	}
 
 protected:
 	// device_t implementation
@@ -122,12 +133,27 @@ protected:
 	virtual void device_reset() override ATTR_COLD;
 
 	device_tc_card_interface *m_card;
+	offs_t m_addrstart, m_addrend;
 
 private:
 	required_device<tc_device> m_bus;
 
 	devcb_write_line m_out_int_cb;
 };
+
+
+template <typename T>
+void tc_device::install_map(T &device, void (T::*map)(address_map &map))
+{
+	device_tc_card_interface *dev = dynamic_cast<device_tc_card_interface *>(&device);
+	if (dev) {
+		tc_slot_device &slot = dev->slot();
+		const offs_t start = slot.get_addrstart();
+		const offs_t end = slot.get_addrend();
+
+		space(AS_PROGRAM).install_device(start, end, device, map);
+	}
+}
 
 
 DECLARE_DEVICE_TYPE(TC, tc_device)
