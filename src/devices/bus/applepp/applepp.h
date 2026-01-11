@@ -29,8 +29,7 @@ public:
 	applepp_connector(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock);
 	virtual ~applepp_connector();
 
-	auto write_pd() { return m_write_pd.bind(); }
-	void pd_w(u8 data);
+	auto write_pd_from_device() { return m_write_pd_from_device.bind(); }
 
 	void pstrb_w(int level);
 	void prw_w(int level);
@@ -41,12 +40,14 @@ public:
 	auto write_pbsy()    { return m_write_pbsy.bind(); }
 	auto write_pparity() { return m_write_pparity.bind(); }
 
-	void pd_set(u8 data);
+	void pd_set_from_device(u8 data);
+	void pd_set_from_host(u8 data);
+
 	void pbsy_set(int level);
 	void pchk_set(int level);
 
 protected:
-	devcb_write8 m_write_pd;
+	devcb_write8 m_write_pd_from_device;
 	devcb_write_line m_write_pchk, m_write_pbsy, m_write_pparity;
 
 	virtual void device_start() override;

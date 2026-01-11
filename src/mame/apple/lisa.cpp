@@ -21,6 +21,9 @@
 #include "cpu/cop400/cop400.h"
 #include "cpu/m68000/m68000.h"
 #include "machine/6522via.h"
+#include "machine/74175.h"
+#include "machine/74244.h"
+#include "machine/74245.h"
 #include "machine/74259.h"
 #include "machine/input_merger.h"
 #include "machine/quadmouse.h"
@@ -32,6 +35,18 @@
 #include "speaker.h"
 
 #include "formats/ap_dsk35.h"
+
+#include <iostream>
+
+
+#define LOG_VIA1            (1 << 1U)
+
+// #define VERBOSE  (0)
+#define VERBOSE (LOG_GENERAL|LOG_VIA1)
+#define LOG_OUTPUT_STREAM std::cout
+#include "logmacro.h"
+
+#define LOGVIA1(...)    LOGMASKED(LOG_VIA1, "VIA1: " __VA_ARGS__)
 
 
 namespace {
@@ -53,6 +68,9 @@ public:
 		m_scc(*this, "scc"),
 		m_speaker(*this, "speaker"),
 		m_pp(*this, "pp"),
+		m_ppctrlbuf(*this, "ppctrlbuf"),
+		m_ppdatabuf(*this, "ppdatabuf"),
+		m_contrast_latch(*this, "contrast_latch"),
 		m_mainram(*this, "mainram"),
 		m_mouse(*this, "mouse"),
 		m_mousebtn(*this, "mousebtn"),
@@ -77,6 +95,9 @@ private:
 	required_device<z80scc_device> m_scc;
 	required_device<speaker_sound_device> m_speaker;
 	required_device<applepp_connector> m_pp;
+	required_device<ttl74244_device> m_ppctrlbuf;
+	required_device<ttl74245_device> m_ppdatabuf;
+	required_device<ttl74174_device> m_contrast_latch;
 
 	required_shared_ptr<uint16_t> m_mainram;
 
@@ -90,7 +111,8 @@ private:
 	bool m_power_button_forced_pressed, m_power_on, m_crdy, m_iocop_g3_forced_low;
 	bool m_kbd, m_iocop_kbd, m_kbcop_kbd, m_kbcop_so;
 	u8 m_iocop_select, m_kbcop_d;
-	
+	u8 m_contrast;
+
 	void lisa_ram_map(address_map &map) ATTR_COLD;
 	void lisa_io_map(address_map &map) ATTR_COLD;
 	void lisa_special_io_map(address_map &map) ATTR_COLD;
@@ -241,19 +263,112 @@ void lisa_state::lisa(machine_config &config)
 
 	QUADMOUSE(config, m_mouse);
 
+	/*
+	   None of the parallel port signals except reset go directly
+	   between VIA1 and the parallel port connector; they're mediated by
+	   a 74245 bidirectional transceiver for the data lines and a 74244
+	   dual 4-bit unidirectional buffer for the control lines.
+
+	   VIA1 also controls the contrast latch.
+	 */
 	APPLEPP_CONNECTOR(config, m_pp, applepp_intf, nullptr);
-	m_pp->write_pd().set(m_via1, FUNC(mos6522_device::write_pa));
-	m_pp->write_pchk().set(m_via1, FUNC(mos6522_device::write_pb0));
-	m_pp->write_pbsy().set(m_via1, FUNC(mos6522_device::write_pb1));
-	m_pp->write_pbsy().append(m_via1, FUNC(mos6522_device::write_ca1));
-	m_pp->write_pparity().set(m_via1, FUNC(mos6522_device::write_cb2));
-	m_via1->ca2_handler().set(m_pp, FUNC(applepp_connector::pstrb_w));
-	m_via1->writepa_handler().set(m_pp, FUNC(applepp_connector::pd_w));
-	m_via1->writepb_handler().set([this](u8 data) {
-									  m_pp->prw_w(BIT(data, 3));
-									  m_pp->pcmd_w(BIT(data, 4));
-									  m_pp->pres_w(BIT(data, 7));
-								  });
+	TTL74244(config, m_ppctrlbuf);
+	TTL74245(config, m_ppdatabuf);
+	TTL74174(config, m_contrast_latch);
+
+	m_pp->write_pd_from_device().set(m_ppdatabuf, FUNC(ttl74245_device::a_w));
+	m_ppdatabuf->qa_cb().set(m_pp, FUNC(applepp_connector::pd_set_from_host));
+	m_via1->writepa_handler().set(m_ppdatabuf, FUNC(ttl74245_device::b_w));
+	m_ppdatabuf->qb_cb().set(m_via1, FUNC(mos6522_device::write_pa));
+
+	m_ppctrlbuf->gb_w(0); // gb is always asserted
+	m_ppctrlbuf->qa_cb<0>().set(m_via1, FUNC(mos6522_device::write_pb0));
+	m_ppctrlbuf->qa_cb<1>().set(m_pp, FUNC(applepp_connector::prw_w));
+	m_ppctrlbuf->qa_cb<2>().set(
+		[this](int state) {
+			LOGVIA1("buffer sent profile strb %d (%s)" "\n", state, machine().describe_context());
+			m_pp->pstrb_w(state);
+		}
+	);
+	m_ppctrlbuf->qa_cb<3>().set(m_pp, FUNC(applepp_connector::pcmd_w));
+
+	m_via1->writepb_handler().set(  [this](u8 data) {
+										m_ppctrlbuf->ga_w(BIT(data, 2));
+										m_ppdatabuf->oe_w(BIT(data, 2));
+										if (BIT(data, 2)) {
+											LOGVIA1("lisa disabled buffers (%s)" "\n", machine().describe_context());
+										} else {
+											LOGVIA1("lisa enabled buffers (%s)" "\n", machine().describe_context());
+										}
+										m_ppdatabuf->dir_w(BIT(data, 3));
+										if (BIT(data, 3)) {
+											LOGVIA1("lisa set data buffer dir a->b (%s)" "\n", machine().describe_context());
+										} else {
+											LOGVIA1("lisa set data buffer dir b->a (%s)" "\n", machine().describe_context());
+										}
+										m_ppctrlbuf->a_w<1>(BIT(data, 3));
+										m_ppctrlbuf->a_w<3>(BIT(data, 4));
+
+										m_contrast_latch->clock_w(BIT(data, 7));
+										if (BIT(data, 7)) {
+											LOGVIA1("lisa set contrast (%s)" "\n", machine().describe_context());
+										}
+									});
+	m_via1->ca2_handler().set(
+		[this](int state) {
+			LOGVIA1("lisa sent buffer strb %d (%s)" "\n", state, machine().describe_context());
+			m_ppctrlbuf->a_w<2>(state);
+		}
+	);
+
+	m_ppctrlbuf->qb_cb<2>().set(m_via1, FUNC(mos6522_device::write_cb2));
+	m_ppctrlbuf->qb_cb<3>().set(
+		[this](int state) {
+			LOGVIA1("buffer sent via1 bsy %d (%s)" "\n", state, machine().describe_context());
+			m_via1->write_pb1(state);
+		}
+	);
+	m_ppctrlbuf->qb_cb<3>().append(
+		[this](int state) {
+			LOGVIA1("buffer sent via1 ca1 %d (%s)" "\n", state, machine().describe_context());
+			m_via1->write_ca1(state);
+		}
+	);
+	m_pp->write_pchk().set(m_ppctrlbuf, FUNC(ttl74244_device::a_w<0>));
+	m_pp->write_pparity().set(m_ppctrlbuf, FUNC(ttl74244_device::b_w<2>));
+	m_pp->write_pbsy().set(
+		[this](int state) {
+			LOGVIA1("profile sent buffer bsy %d (%s)" "\n", state, machine().describe_context());
+			m_ppctrlbuf->b_w<3>(state);
+		}
+	);
+
+	m_via1->writepa_handler().append( [this](u8 data) {
+		m_contrast_latch->d1_w(BIT(data, 2));
+		m_contrast_latch->d2_w(BIT(data, 3));
+		m_contrast_latch->d3_w(BIT(data, 4));
+		m_contrast_latch->d4_w(BIT(data, 5));
+		m_contrast_latch->d5_w(BIT(data, 6));
+		m_contrast_latch->d6_w(BIT(data, 7));
+	});
+	m_contrast_latch->q1_callback().set([this](int level) {
+		m_contrast |= (~(level << 2) & (level << 2));
+	});
+	m_contrast_latch->q2_callback().set([this](int level) {
+		m_contrast |= (~(level << 3) & (level << 3));
+	});
+	m_contrast_latch->q3_callback().set([this](int level) {
+		m_contrast |= (~(level << 4) & (level << 4));
+	});
+	m_contrast_latch->q4_callback().set([this](int level) {
+		m_contrast |= (~(level << 5) & (level << 5));
+	});
+	m_contrast_latch->q5_cb().set([this](int level) {
+		m_contrast |= (~(level << 6) & (level << 6));
+	});
+	m_contrast_latch->q6_cb().set([this](int level) {
+		m_contrast |= (~(level << 7) & (level << 7));
+	});
 
 	config.set_perfect_quantum(m_iocop);
 }
@@ -305,6 +420,7 @@ void lisa_state::machine_start()
 	save_item(NAME(m_kbd));
 	save_item(NAME(m_kbcop_so));
 	save_item(NAME(m_kbcop_d));
+	save_item(NAME(m_contrast));
 
 	m_power_button_timer = timer_alloc(FUNC(lisa_state::power_button_release), this);
 	m_iocop_g3 = timer_alloc(FUNC(lisa_state::iocop_g3_freed), this);
@@ -316,9 +432,10 @@ void lisa_state::machine_start()
 	m_iocop_select = 0;
 	m_iocop_kbd = false;
 	m_kbcop_kbd = false;
-	m_kbd = true;	
+	m_kbd = true;
 	m_kbcop_so = false;
 	m_kbcop_d = 0;
+	m_contrast = 0;
 }
 
 void lisa_state::machine_reset()
@@ -362,7 +479,7 @@ u8 lisa_state::iocop_g_r()
 		g |= 2 | (m_kbd ? 1 : 0);
 	}
 
-	//	logerror("iocop g read %d\n", (machine().time().as_ticks(3932160*2)+1)/2);
+	//  logerror("iocop g read %d\n", (machine().time().as_ticks(3932160*2)+1)/2);
 
 	return g;
 }
@@ -371,7 +488,7 @@ u8 lisa_state::kbcop_g_r()
 {
 	if(m_kbcop_so) {
 		u32 pc = m_kbcop->pcbase();
-		//		logerror("kbcop g read %d (%x)\n", (machine().time().as_ticks(3932160*2)+1)/2, m_kbcop->pcbase());
+		//      logerror("kbcop g read %d (%x)\n", (machine().time().as_ticks(3932160*2)+1)/2, m_kbcop->pcbase());
 		// bit3=0 seems to mean reset?
 		return 0xe | (m_kbd  && (pc != 0xb2000) ? 0 : 1);
 
@@ -389,7 +506,7 @@ void lisa_state::iocop_kbd_w(int state)
 
 void lisa_state::kbcop_kbd_w(int state)
 {
-	//	logerror("kbcop sk %d\n", state);
+	//  logerror("kbcop sk %d\n", state);
 	m_kbcop_kbd = state;
 	kbd_update();
 }
@@ -413,7 +530,7 @@ u8 lisa_state::kbcop_l_r()
 void lisa_state::kbcop_d_w(u8 data)
 {
 	m_kbcop_d = data;
-	//	logerror("kbcop_d_w %x (%03x)\n", data, m_kbcop->pcbase());
+	//  logerror("kbcop_d_w %x (%03x)\n", data, m_kbcop->pcbase());
 }
 
 void lisa_state::iocop_d_w(u8 data)
