@@ -597,6 +597,18 @@ end
 
 ---------------------------------------------------
 --
+--@src/devices/machine/74244.h,MACHINES["TTL74244"] = true
+---------------------------------------------------
+
+if MACHINES["TTL74244"] then
+	files {
+		MAME_DIR .. "src/devices/machine/74244.cpp",
+		MAME_DIR .. "src/devices/machine/74244.h",
+	}
+end
+
+---------------------------------------------------
+--
 --@src/devices/machine/74259.h,MACHINES["TTL74259"] = true
 ---------------------------------------------------
 
