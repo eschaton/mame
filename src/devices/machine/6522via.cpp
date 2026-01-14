@@ -14,6 +14,8 @@
 #include "emu.h"
 #include "6522via.h"
 
+#include <iostream>
+
 /***************************************************************************
     PARAMETERS
 ***************************************************************************/
@@ -22,9 +24,11 @@
 #define LOG_SHIFT   (1U << 2)
 #define LOG_READ    (1U << 3)
 #define LOG_INT     (1U << 4)
+#define LOG_HS      (1U << 5)
 
 //#define VERBOSE (LOG_SHIFT|LOG_INT|LOG_SETUP)
-//#define LOG_OUTPUT_FUNC printf
+#define VERBOSE (LOG_HS)
+#define LOG_OUTPUT_STREAM   std::cout
 
 #include "logmacro.h"
 
@@ -32,6 +36,7 @@
 #define LOGSHIFT(...) LOGMASKED(LOG_SHIFT,   __VA_ARGS__)
 #define LOGR(...)     LOGMASKED(LOG_READ,    __VA_ARGS__)
 #define LOGINT(...)   LOGMASKED(LOG_INT,     __VA_ARGS__)
+#define LOGHS(...)    LOGMASKED(LOG_HS,      __VA_ARGS__)
 
 
 /***************************************************************************
@@ -560,6 +565,7 @@ TIMER_CALLBACK_MEMBER(via6522_device::t2_tick)
 
 TIMER_CALLBACK_MEMBER(via6522_device::ca2_tick)
 {
+	LOGHS("ca2_pulse_out 1 (tick)" "\n");
 	m_out_ca2 = 1;
 	m_ca2_handler(m_out_ca2);
 }
@@ -667,14 +673,16 @@ u8 via6522_device::read(offs_t offset)
 			LOGINT("PA INT ");
 			CLR_PA_INT();
 
-			if (m_out_ca2 && (CA2_PULSE_OUTPUT(m_pcr) || CA2_AUTO_HS(m_pcr)))
-			{
+			if (m_out_ca2 && CA2_AUTO_HS(m_pcr)) {
+				LOGHS("ca2_autohs_out 0 (read PA)" "\n");
 				m_out_ca2 = 0;
 				m_ca2_handler(m_out_ca2);
-			}
-
-			if (CA2_PULSE_OUTPUT(m_pcr))
+			} else if (m_out_ca2 && CA2_PULSE_OUTPUT(m_pcr)) {
+				LOGHS("ca2_pulse_out 0 (read PA)" "\n");
+				m_out_ca2 = 0;
+				m_ca2_handler(m_out_ca2);
 				m_ca2_timer->adjust(clocks_to_attotime(1));
+			}
 		}
 
 		break;
@@ -866,14 +874,16 @@ void via6522_device::write(offs_t offset, u8 data)
 		LOGINT("PA INT ");
 		CLR_PA_INT();
 
-		if (m_out_ca2 && (CA2_PULSE_OUTPUT(m_pcr) || CA2_AUTO_HS(m_pcr)))
-		{
+		if (m_out_ca2 && CA2_AUTO_HS(m_pcr)) {
+			LOGHS("ca2_autohs_out 0 (write PA)" "\n");
 			m_out_ca2 = 0;
 			m_ca2_handler(m_out_ca2);
+		} else if (m_out_ca2 && CA2_PULSE_OUTPUT(m_pcr)) {
+			LOGHS("ca2_pulse_out 0 (write PA)" "\n");
+			m_out_ca2 = 0;
+			m_ca2_handler(m_out_ca2);
+			m_ca2_timer->adjust(clocks_to_attotime(1));
 		}
-
-		if (CA2_PULSE_OUTPUT(m_pcr))
-		m_ca2_timer->adjust(clocks_to_attotime(1));
 
 		break;
 
@@ -1104,8 +1114,8 @@ void via6522_device::write_ca1(int state)
 			LOGINT("CA1 INT request ");
 			set_int(INT_CA1);
 
-			if (!m_out_ca2 && CA2_AUTO_HS(m_pcr))
-			{
+			if (!m_out_ca2 && CA2_AUTO_HS(m_pcr)) {
+				LOGHS("ca2_autohs_out 1 (write CA1)" "\n");
 				m_out_ca2 = 1;
 				m_ca2_handler(m_out_ca2);
 			}
