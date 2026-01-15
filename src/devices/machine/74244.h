@@ -41,7 +41,7 @@ public:
 		m_a &= ~(1 << Line);
 
 		m_a |= (state << Line);
-		if (!m_ga) {
+		if (m_ga == 0) { // negative logic
 			m_qa_cbs[Line](state);
 		}
 	}
@@ -53,7 +53,7 @@ public:
 		m_b &= ~(1 << Line);
 
 		m_b |= (state << Line);
-		if (!m_gb) {
+		if (m_gb == 0) { // negative logic
 			m_qb_cbs[Line](state);
 		}
 	}
@@ -80,20 +80,20 @@ protected:
 
 private:
 	void do_all_a_output_if_necessary() {
-		if (!m_ga) { // negative logic
-			m_qa_cbs[0](BIT(m_a, 0));
-			m_qa_cbs[1](BIT(m_a, 1));
-			m_qa_cbs[2](BIT(m_a, 2));
-			m_qa_cbs[3](BIT(m_a, 3));
+		if (m_ga == 0) { // negative logic
+			if (!m_qa_cbs[0].isunset()) m_qa_cbs[0](BIT(m_a, 0));
+			if (!m_qa_cbs[1].isunset()) m_qa_cbs[1](BIT(m_a, 1));
+			if (!m_qa_cbs[2].isunset()) m_qa_cbs[2](BIT(m_a, 2));
+			if (!m_qa_cbs[3].isunset()) m_qa_cbs[3](BIT(m_a, 3));
 		}
 	}
 
 	void do_all_b_output_if_necessary() {
-		if (!m_gb) { // negative logic
-			m_qb_cbs[0](BIT(m_b, 0));
-			m_qb_cbs[1](BIT(m_b, 1));
-			m_qb_cbs[2](BIT(m_b, 2));
-			m_qb_cbs[3](BIT(m_b, 3));
+		if (m_gb == 0) { // negative logic
+			if (!m_qb_cbs[0].isunset()) m_qb_cbs[0](BIT(m_b, 0));
+			if (!m_qb_cbs[1].isunset()) m_qb_cbs[1](BIT(m_b, 1));
+			if (!m_qb_cbs[2].isunset()) m_qb_cbs[2](BIT(m_b, 2));
+			if (!m_qb_cbs[3].isunset()) m_qb_cbs[3](BIT(m_b, 3));
 		}
 	}
 

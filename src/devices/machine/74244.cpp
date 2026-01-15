@@ -17,8 +17,8 @@ ttl74244_device::ttl74244_device(const machine_config &mconfig, const char *tag,
 	, m_qb_cbs(*this)
 	, m_a(0)
 	, m_b(0)
-	, m_ga(0)
-	, m_gb(0)
+	, m_ga(-1)
+	, m_gb(-1)
 {}
 
 void ttl74244_device::device_start()
@@ -32,5 +32,10 @@ void ttl74244_device::device_start()
 void ttl74244_device::device_reset()
 {
 	m_a = m_b = 0;
-	m_ga = m_gb = 0;
+	m_ga = m_gb = -1;
+
+	// The initial values of m_ga and m_gb are -1 rather than 0 or 1 so
+	// the first time they're set, their current value is always
+	// different than what they'll be set to and will thus trigger
+	// output.
 }
