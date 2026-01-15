@@ -71,11 +71,13 @@ private:
 	/// Utility to invoke the output callback based on the selected
 	/// direction but only if the output enable input is asserted.
 	void do_output_if_necessary() {
-		if (!m_oe) { // negative logic
-			if (m_dir) {
-				m_qb_func(m_aforb);
+		if (m_oe == 0) { // negative logic
+			if (m_dir == 1) {
+				if (!m_qb_func.isunset()) m_qb_func(m_aforb);
+			} else if (m_dir == 0) {
+				if (!m_qa_func.isunset()) m_qa_func(m_bfora);
 			} else {
-				m_qa_func(m_bfora);
+				// Unconfigured, do nothing.
 			}
 		}
 	}
