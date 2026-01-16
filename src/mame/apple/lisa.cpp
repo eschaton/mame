@@ -18,6 +18,7 @@
 #include "lisavideo.h"
 
 #include "bus/applepp/applepp.h"
+#include "bus/lisabus/lisabus.h"
 #include "cpu/cop400/cop400.h"
 #include "cpu/m68000/m68000.h"
 #include "machine/6522via.h"
@@ -71,6 +72,7 @@ public:
 		m_ppctrlbuf(*this, "ppctrlbuf"),
 		m_ppdatabuf(*this, "ppdatabuf"),
 		m_contrast_latch(*this, "contrast_latch"),
+		m_lisabus(*this, "lisabus"),
 		m_mainram(*this, "mainram"),
 		m_mouse(*this, "mouse"),
 		m_mousebtn(*this, "mousebtn"),
@@ -98,6 +100,7 @@ private:
 	required_device<ttl74244_device> m_ppctrlbuf;
 	required_device<ttl74245_device> m_ppdatabuf;
 	required_device<ttl74174_device> m_contrast_latch;
+	required_device<lisabus_device> m_lisabus;
 
 	required_shared_ptr<uint16_t> m_mainram;
 
@@ -187,6 +190,8 @@ void lisa_state::lisa_io_map(address_map &map)
 	map(0x00e800, 0x00e800).rw(m_video, FUNC(lisa_video_device::base_r), FUNC(lisa_video_device::base_w));
 	map(0x00f000, 0x00f001).r(m_mmu, FUNC(lisa_mmu_device::parity_error_address_r));
 	map(0x00f800, 0x00f801).r(m_mmu, FUNC(lisa_mmu_device::status_r));
+
+	map(0xfc0000, 0xfcbfff).rw(m_lisabus, FUNC(lisabus_device::bus_r), FUNC(lisabus_device::bus_w));
 }
 
 void lisa_state::lisa_ram_map(address_map &map)
@@ -206,7 +211,7 @@ void lisa_state::lisa(machine_config &config)
 	m_maincpu->enable_mmu();
 
 	INPUT_MERGER_ANY_HIGH(config, m_ioir);
-	m_ioir->output_handler().set_inputline(m_maincpu, 1);
+	m_ioir->output_handler().set_inputline(m_maincpu, M68K_IRQ_1);
 
 	LISAMMU(config, m_mmu);
 	m_mmu->set_addrmap(lisa_mmu_device::AS_RAM,        &lisa_state::lisa_ram_map);
@@ -254,7 +259,7 @@ void lisa_state::lisa(machine_config &config)
 
 	// via
 	MOS6522(config, m_via0, 20.37504_MHz_XTAL / 40); // CPU E clock (nominally 500 kHz)
-	m_via0->irq_handler().set_inputline(m_maincpu, 2);
+	m_via0->irq_handler().set_inputline(m_maincpu, M68K_IRQ_2);
 
 	MOS6522(config, m_via1, 20.37504_MHz_XTAL / 40); // CPU E clock (nominally 500 kHz)
 	m_via1->irq_handler().set(m_ioir, FUNC(input_merger_device::in_w<2>));
@@ -369,6 +374,21 @@ void lisa_state::lisa(machine_config &config)
 	m_contrast_latch->q6_cb().set([this](int level) {
 		m_contrast |= (~(level << 7) & (level << 7));
 	});
+
+	// Set up the expansion bus.
+
+	LISABUS(config, m_lisabus, 20.37504_MHz_XTAL / 4); // CPUCK is nominally 5 MHz);
+	LISABUS_SLOT(config, "slot0", 20.37504_MHz_XTAL / 4, m_lisabus, lisabus_cards, nullptr);
+	LISABUS_SLOT(config, "slot1", 20.37504_MHz_XTAL / 4, m_lisabus, lisabus_cards, nullptr);
+	LISABUS_SLOT(config, "slot2", 20.37504_MHz_XTAL / 4, m_lisabus, lisabus_cards, nullptr);
+	m_lisabus->slot_int_w_cb().set([this](int slot, int level) {
+		switch (slot) {
+			case 0:	m_ioir->in_w<3>(level); break;
+			case 1:	m_ioir->in_w<4>(level); break;
+			case 2:	m_ioir->in_w<5>(level); break;
+		}
+	});
+	m_lisabus->slot_berr_w_cb().set(m_maincpu, FUNC(m68000_device::berr_w));
 
 	config.set_perfect_quantum(m_iocop);
 }

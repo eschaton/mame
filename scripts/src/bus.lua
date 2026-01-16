@@ -3087,6 +3087,19 @@ end
 
 ---------------------------------------------------
 --
+--@src/devices/bus/lisabus/lisabus.h,BUSES["LISABUS"] = true
+---------------------------------------------------
+
+if BUSES["LISABUS"] then
+	files {
+		MAME_DIR .. "src/devices/bus/lisabus/lisabus.cpp",
+		MAME_DIR .. "src/devices/bus/lisabus/lisabus.h",
+	}
+end
+
+
+---------------------------------------------------
+--
 --@src/devices/bus/lpci/pci.h,BUSES["LPCI"] = true
 ---------------------------------------------------
 
