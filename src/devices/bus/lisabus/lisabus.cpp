@@ -73,6 +73,17 @@
 #include "lisabus.h"
 
 
+#include <iostream>
+
+#define LOG_ACCESS          (1 << 1U)
+#define LOGACCESS(...)      LOGMASKED(LOG_ACCESS, __VA_ARGS__)
+// #define VERBOSE              (0)
+#define VERBOSE             (LOG_GENERAL|LOG_ACCESS)
+#define LOG_OUTPUT_STREAM   std::cout
+
+#include "logmacro.h"
+
+
 template class device_finder<device_lisabus_card_interface, false>;
 template class device_finder<device_lisabus_card_interface, true>;
 
@@ -125,6 +136,7 @@ device_lisabus_card_interface *lisabus_device::get_lisabus_card(int slot)
 
 u16 lisabus_device::slot_r(int slot, offs_t offset, u16 mask)
 {
+	LOGACCESS("LISABUS: slot_r(%d, 0x%04x) & 0x%04x" "\n", slot, offset, mask);
 	assert((slot >= 0) && (slot <= 2));
 	u16 data;
 	if (m_device_list[slot]) {
@@ -139,6 +151,7 @@ u16 lisabus_device::slot_r(int slot, offs_t offset, u16 mask)
 
 void lisabus_device::slot_w(int slot, offs_t offset, u16 data, u16 mask)
 {
+	LOGACCESS("LISABUS: slot_w(%d, 0x%04x, 0x%04x & 0x%04x" "\n", slot, offset, data, mask);
 	assert((slot >= 0) && (slot <= 2));
 	if (m_device_list[slot]) {
 		m_device_list[slot]->card_w(offset, data, mask);
@@ -150,6 +163,7 @@ void lisabus_device::slot_w(int slot, offs_t offset, u16 data, u16 mask)
 
 u16 lisabus_device::bus_r(offs_t offset, u16 mask)
 {
+	LOGACCESS("LISABUS: bus_r(0x%04x) & 0x%04x" "\n", offset, mask);
 	u16 data;
 	switch (offset & 0xc000) {
 		case 0x0000: data = slot_r(0, offset, mask); break;
@@ -167,6 +181,7 @@ u16 lisabus_device::bus_r(offs_t offset, u16 mask)
 
 void lisabus_device::bus_w(offs_t offset, u16 data, u16 mask)
 {
+	LOGACCESS("LISABUS: bus_w(0x%04x, 0x%04x & 0x%04x" "\n", offset, data, mask);
 	switch (offset & 0xc000) {
 		case 0x0000: slot_w(0, offset, data, mask); break;
 		case 0x4000: slot_w(1, offset, data, mask); break;
@@ -230,9 +245,4 @@ void device_lisabus_card_interface::interface_pre_start()
 
 		m_lisabus->add_lisabus_card(m_slot, this);
 	}
-}
-
-
-void lisabus_cards(device_slot_interface &device)
-{
 }

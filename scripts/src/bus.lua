@@ -3092,8 +3092,12 @@ end
 
 if BUSES["LISABUS"] then
 	files {
+		MAME_DIR .. "src/devices/bus/lisabus/cards.cpp",
+		MAME_DIR .. "src/devices/bus/lisabus/cards.h",
 		MAME_DIR .. "src/devices/bus/lisabus/lisabus.cpp",
 		MAME_DIR .. "src/devices/bus/lisabus/lisabus.h",
+		MAME_DIR .. "src/devices/bus/lisabus/lisadualpp.cpp",
+		MAME_DIR .. "src/devices/bus/lisabus/lisadualpp.h",
 	}
 end
 

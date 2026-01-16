@@ -130,7 +130,4 @@ private:
 	int m_slot;
 };
 
-
-void lisabus_cards(device_slot_interface &device);
-
 #endif // MAME_BUS_LISABUS_LISABUS_H

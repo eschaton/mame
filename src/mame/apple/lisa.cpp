@@ -19,6 +19,7 @@
 
 #include "bus/applepp/applepp.h"
 #include "bus/lisabus/lisabus.h"
+#include "bus/lisabus/cards.h"
 #include "cpu/cop400/cop400.h"
 #include "cpu/m68000/m68000.h"
 #include "machine/6522via.h"
@@ -383,9 +384,9 @@ void lisa_state::lisa(machine_config &config)
 	LISABUS_SLOT(config, "slot2", 20.37504_MHz_XTAL / 4, m_lisabus, lisabus_cards, nullptr);
 	m_lisabus->slot_int_w_cb().set([this](int slot, int level) {
 		switch (slot) {
-			case 0:	m_ioir->in_w<3>(level); break;
-			case 1:	m_ioir->in_w<4>(level); break;
-			case 2:	m_ioir->in_w<5>(level); break;
+			case 0: m_ioir->in_w<3>(level); break;
+			case 1: m_ioir->in_w<4>(level); break;
+			case 2: m_ioir->in_w<5>(level); break;
 		}
 	});
 	m_lisabus->slot_berr_w_cb().set(m_maincpu, FUNC(m68000_device::berr_w));
