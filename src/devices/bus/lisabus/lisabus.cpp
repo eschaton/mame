@@ -166,9 +166,9 @@ u16 lisabus_device::bus_r(offs_t offset, u16 mask)
 	LOGACCESS("LISABUS: bus_r(0x%04x) & 0x%04x" "\n", offset, mask);
 	u16 data;
 	switch (offset & 0xc000) {
-		case 0x0000: data = slot_r(0, offset, mask); break;
-		case 0x4000: data = slot_r(1, offset, mask); break;
-		case 0x8000: data = slot_r(2, offset, mask); break;
+		case 0x0000: data = slot_r(0, offset - 0x0000, mask); break;
+		case 0x4000: data = slot_r(1, offset - 0x4000, mask); break;
+		case 0x8000: data = slot_r(2, offset - 0x8000, mask); break;
 		default:
 			slot_berr_w(0);
 			slot_berr_w(1);
@@ -183,9 +183,9 @@ void lisabus_device::bus_w(offs_t offset, u16 data, u16 mask)
 {
 	LOGACCESS("LISABUS: bus_w(0x%04x, 0x%04x & 0x%04x" "\n", offset, data, mask);
 	switch (offset & 0xc000) {
-		case 0x0000: slot_w(0, offset, data, mask); break;
-		case 0x4000: slot_w(1, offset, data, mask); break;
-		case 0x8000: slot_w(2, offset, data, mask); break;
+		case 0x0000: slot_w(0, offset, data - 0x0000, mask); break;
+		case 0x4000: slot_w(1, offset, data - 0x4000, mask); break;
+		case 0x8000: slot_w(2, offset, data - 0x8000, mask); break;
 		default:
 			slot_berr_w(0);
 			slot_berr_w(1);
