@@ -152,7 +152,7 @@ void lisa_state::lisa_special_io_map(address_map &map)
 void lisa_state::lisa_io_map(address_map &map)
 {
 	// Extension cards range
-	map(0x000000, 0x00bfff).lr16(NAME([]() -> u16 { return 0xffff; })).nopw();
+	map(0x000000, 0x00bfff).rw(m_lisabus, FUNC(lisabus_device::bus_r), FUNC(lisabus_device::bus_w));
 
 	map(0x00c000, 0x00c7ff).rw(m_fdc, FUNC(lisa_base_fdc_device::ram_r), FUNC(lisa_base_fdc_device::ram_w)).umask16(0x00ff);
 
@@ -191,8 +191,6 @@ void lisa_state::lisa_io_map(address_map &map)
 	map(0x00e800, 0x00e800).rw(m_video, FUNC(lisa_video_device::base_r), FUNC(lisa_video_device::base_w));
 	map(0x00f000, 0x00f001).r(m_mmu, FUNC(lisa_mmu_device::parity_error_address_r));
 	map(0x00f800, 0x00f801).r(m_mmu, FUNC(lisa_mmu_device::status_r));
-
-	map(0xfc0000, 0xfcbfff).rw(m_lisabus, FUNC(lisabus_device::bus_r), FUNC(lisabus_device::bus_w));
 }
 
 void lisa_state::lisa_ram_map(address_map &map)
