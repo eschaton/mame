@@ -4,22 +4,34 @@
 
   Apple Lisa Dual Parallel Port Card
 
+    - ROM is 341-0193-A and is bootable
+
 ***************************************************************************/
 
 #include "lisadualpp.h"
 
+#include "bus/applepp/applepp.h"
+
 #include "machine/6522via.h"
+#include "machine/74244.h"
+#include "machine/74245.h"
 #include "machine/input_merger.h"
 
 #include <iostream>
 
 #define LOG_ACCESS          (1 << 1U)
 #define LOGACCESS(...)      LOGMASKED(LOG_ACCESS, __VA_ARGS__)
-// #define VERBOSE              (0)
+// #define VERBOSE             (0)
 #define VERBOSE             (LOG_GENERAL|LOG_ACCESS)
 #define LOG_OUTPUT_STREAM   std::cout
 
 #include "logmacro.h"
+
+
+ROM_START(lisadualpp)
+	ROM_REGION(0x0800, "rom", 0)
+	ROM_LOAD( "341-0193-a.bin", 0x0000, 0x0800, CRC(48c96d3e) SHA1(9e7f7dc042c9082662ef31c1900920e40a0894dd) )
+ROM_END
 
 
 class lisadualpp_card_device : public device_t, public device_lisabus_card_interface
@@ -31,12 +43,20 @@ protected:
 	lisadualpp_card_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock)
 		: device_t(mconfig, type, tag, owner, clock)
 		, device_lisabus_card_interface(mconfig, *this)
+		, m_rom(*this, "rom")
 		, m_irqm(*this, "irqm")
 		, m_via0(*this, "via0")
 		, m_via1(*this, "via1")
+		, m_ppctrlbuf0(*this, "ppctrlbuf0")
+		, m_ppctrlbuf1(*this, "ppctrlbuf1")
+		, m_ppdatabuf0(*this, "ppdatabuf0")
+		, m_ppdatabuf1(*this, "ppdatabuf1")
+		, m_lowerpp(*this, "lowerpp")
+		, m_upperpp(*this, "upperpp")
 	{}
 
 	virtual void device_add_mconfig(machine_config &config) override ATTR_COLD;
+	virtual const tiny_rom_entry *device_rom_region() const override ATTR_COLD;
 	virtual void device_start() override ATTR_COLD;
 	virtual void device_reset() override ATTR_COLD;
 
@@ -46,9 +66,19 @@ protected:
 private:
 	u16 rom_r(offs_t off);
 
+	u16 via_r(int n, offs_t off);
+	void via_w(int n, offs_t off, u16 data);
+
+	required_region_ptr<u8> m_rom;
 	required_device<input_merger_device> m_irqm;
 	required_device<via6522_device> m_via0;
 	required_device<via6522_device> m_via1;
+	required_device<ttl74244_device> m_ppctrlbuf0;
+	required_device<ttl74244_device> m_ppctrlbuf1;
+	required_device<ttl74245_device> m_ppdatabuf0;
+	required_device<ttl74245_device> m_ppdatabuf1;
+	required_device<applepp_connector> m_lowerpp;
+	required_device<applepp_connector> m_upperpp;
 };
 
 
@@ -59,43 +89,53 @@ lisadualpp_card_device::lisadualpp_card_device(const machine_config &mconfig, co
 
 void lisadualpp_card_device::device_add_mconfig(machine_config &config)
 {
-	printf("lisadualpp_card_device::device_add_mconfig" "\n");
 	INPUT_MERGER_ANY_HIGH(config, m_irqm);
 	m_irqm->output_handler().set(FUNC(lisadualpp_card_device::int_w));
 
 	MOS6522(config, m_via0, 20.37504_MHz_XTAL / 16); // high-speed like Lisa 2/10
 	m_via0->irq_handler().set(m_irqm, FUNC(input_merger_device::in_w<0>));
 
+	APPLEPP_CONNECTOR(config, m_lowerpp, applepp_intf, nullptr);
+	TTL74244(config, m_ppctrlbuf0, 0);
+	TTL74245(config, m_ppdatabuf0, 0);
+
 	MOS6522(config, m_via1, 20.37504_MHz_XTAL / 16); // high-speed like Lisa 2/10
 	m_via1->irq_handler().set(m_irqm, FUNC(input_merger_device::in_w<1>));
+
+	APPLEPP_CONNECTOR(config, m_upperpp, applepp_intf, nullptr);
+	TTL74244(config, m_ppctrlbuf1, 0);
+	TTL74245(config, m_ppdatabuf1, 0);
+}
+
+const tiny_rom_entry *lisadualpp_card_device::device_rom_region() const
+{
+	return ROM_NAME(lisadualpp);
 }
 
 void lisadualpp_card_device::device_start()
 {
-	printf("lisadualpp_card_device::device_start" "\n");
 }
 
 void lisadualpp_card_device::device_reset()
 {
-	printf("lisadualpp_card_device::device_reset" "\n");
 }
 
 u16 lisadualpp_card_device::card_r(offs_t off, u16 mask)
 {
-	LOGACCESS("%s: card_r(0x%04x) & 0x%04x (%s)" "\n", name(), off, mask, machine().describe_context());
-
 	u16 data;
 
-	switch (off & 0xff01) {
-		case 0x0001:    data = rom_r(off);          break;
-		case 0x2000:    data = m_via0->read(off);   break;
-		case 0x2800:    data = m_via1->read(off);   break;
+	switch (off & 0xff00) {
+		case 0x0000:    data = rom_r(off - 0x0000);     break;
+		case 0x2000:    data = via_r(0, off - 0x2000);  break;
+		case 0x2800:    data = via_r(1, off - 0x2800);  break;
 		default:
 			data = 0xffff;
 			lisabus().slot_berr_w(0);
 			lisabus().slot_berr_w(1);
 			break;
 	}
+
+	LOGACCESS("%s: card_r(0x%04x) -> 0x%04x & 0x%04x (%s)" "\n", name(), off, data, mask, machine().describe_context());
 
 	return data & mask;
 }
@@ -105,8 +145,8 @@ void lisadualpp_card_device::card_w(offs_t off, u16 data, u16 mask)
 	LOGACCESS("%s: card_w(0x%04x, 0x%04x & 0x%04x) (%s)" "\n", name(), off, data, mask, machine().describe_context());
 
 	switch (off & 0xff00) {
-		case 0x2000:    m_via0->write(off, data);   break;
-		case 0x2800:    m_via1->write(off, data);   break;
+		case 0x2000:    via_w(0, off - 0x2000, data);   break;
+		case 0x2800:    via_w(1, off - 0x2800, data);   break;
 		default:
 			lisabus().slot_berr_w(0);
 			lisabus().slot_berr_w(1);
@@ -116,12 +156,69 @@ void lisadualpp_card_device::card_w(offs_t off, u16 data, u16 mask)
 
 u16 lisadualpp_card_device::rom_r(offs_t off)
 {
-	switch (off) {
-		case 0x0001:    return 0x0080;
-		case 0x0003:    return 0x0003;
-		default:        return 0xffff;
+	// the ROM is only 8 bits wide and read from odd addresses into a
+	// buffer to use during boot
+
+	u16 data = 0x0000;
+	if (off & 0x0001) {
+		data = m_rom[off >> 1];
 	}
+
+	LOGACCESS("%s: rom_r(0x%04x) -> 0x%04x (%s)" "\n", name(), off, data, machine().describe_context());
+
+	return data;
 }
 
+static inline offs_t via_reg_for_offs(offs_t off)
+{
+	offs_t real_off;
+	switch (off) {
+		case 0x01: real_off = 0x00; break;
+		case 0x09: real_off = 0x01; break;
+		case 0x11: real_off = 0x02; break;
+		case 0x19: real_off = 0x03; break;
+		case 0x21: real_off = 0x04; break;
+		case 0x29: real_off = 0x05; break;
+		case 0x31: real_off = 0x06; break;
+		case 0x39: real_off = 0x07; break;
+		case 0x41: real_off = 0x08; break;
+		case 0x49: real_off = 0x09; break;
+		case 0x51: real_off = 0x0a; break;
+		case 0x59: real_off = 0x0b; break;
+		case 0x61: real_off = 0x0c; break;
+		case 0x69: real_off = 0x0d; break;
+		case 0x71: real_off = 0x0e; break;
+		case 0x79: real_off = 0x0f; break;
+		default:   fatalerror("bad access");
+	}
+	return real_off;
+}
+
+u16 lisadualpp_card_device::via_r(int n, offs_t off)
+{
+	LOGACCESS("%s: via_r(0x%04x) (%s)" "\n", name(), off, machine().describe_context());
+
+	if (!(off & 0x1)) {
+		return 0x0000;
+	}
+
+	offs_t real_off = via_reg_for_offs(off);
+	via6522_device *via = (n == 0) ? m_via0 : m_via1;
+	u16 data = via->read(real_off);
+	return data;
+}
+
+void lisadualpp_card_device::via_w(int n, offs_t off, u16 data)
+{
+	LOGACCESS("%s: via_w(0x%04x, 0x%04x) (%s)" "\n", name(), off, data, machine().describe_context());
+
+	if (!(off & 0x1)) {
+		return;
+	}
+
+	offs_t real_off = via_reg_for_offs(off);
+	via6522_device *via = (n == 0) ? m_via0 : m_via1;
+	via->write(real_off, data & 0x00ff);
+}
 
 DEFINE_DEVICE_TYPE_PRIVATE(LISADUALPP, device_lisabus_card_interface, lisadualpp_card_device, "lisadualpp", "Apple Lisa Dual Parallel Port Card")
