@@ -193,6 +193,12 @@ void lisabus_device::bus_w(offs_t offset, u16 data, u16 mask)
 	}
 }
 
+void lisabus_device::slot_iack_w(int slot, int level)
+{
+	device_lisabus_card_interface *device = get_lisabus_card(slot);
+	if (device) device->iack_w(level);
+}
+
 void lisabus_device::device_start()
 {
 	std::fill(std::begin(m_device_list), std::end(m_device_list), nullptr);

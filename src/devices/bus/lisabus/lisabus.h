@@ -55,30 +55,34 @@ public:
 
 	// interface between card and bus
 
-	void slot_int_w(int slot, int level) { if (!m_slot_int_w_cb.isunset()) m_slot_int_w_cb(slot, level); }
-	template <std::size_t Slot> auto slot_iack_w_cb() { return m_slot_iack_w_cbs[Slot].bind(); }
+	void slot_int_w(int slot, int level) {
+		if (!m_slot_int_w_cbs[slot].isunset())
+			m_slot_int_w_cbs[slot](level);
+	}
 
 	// interface between host and bus
 
 	u16 bus_r(offs_t offset, u16 mask = ~0);
 	void bus_w(offs_t offset, u16 data, u16 mask = ~0);
 
-	auto slot_int_w_cb() { return m_slot_int_w_cb.bind(); }
-	void slot_iack_w(int slot, int level) {
-		if (!m_slot_iack_w_cbs[slot].isunset()) {
-			m_slot_iack_w_cbs[slot](level);
-		}
-	}
+	void slot_iack_w(int slot, int level);
+
+	template <std::size_t Slot>
+	auto slot_int_w_cbs() { return m_slot_int_w_cbs[Slot].bind(); }
 
 	auto slot_berr_w_cb() { return m_slot_berr_w_cb.bind(); }
 	void slot_berr_w(int level) { if (!m_slot_berr_w_cb.isunset()) m_slot_berr_w_cb(level); }
 
+	auto slot_vpa_w_cb() { return m_slot_vpa_w_cb.bind(); }
+	void slot_vpa_w(int level) { if (!m_slot_vpa_w_cb.isunset()) m_slot_vpa_w_cb(level); }
+
 protected:
 	lisabus_device(const machine_config &mconfig, device_type type, const char *tag, device_t *owner, uint32_t clock)
 		: device_t(mconfig, type, tag, owner, clock)
-		, m_slot_int_w_cb(*this)
+		, m_slot_int_w_cbs(*this)
 		, m_slot_iack_w_cbs(*this)
 		, m_slot_berr_w_cb(*this)
+		, m_slot_vpa_w_cb(*this)
 	{}
 
 	virtual void device_start() override ATTR_COLD;
@@ -88,9 +92,10 @@ protected:
 	void slot_w(int slot, offs_t offset, u16 data, u16 mask = ~0);
 
 	device_lisabus_card_interface *m_device_list[3];
-	devcb_write<int> m_slot_int_w_cb;
+	devcb_write_line::array<3> m_slot_int_w_cbs;
 	devcb_write_line::array<3> m_slot_iack_w_cbs;
 	devcb_write_line m_slot_berr_w_cb;
+	devcb_write_line m_slot_vpa_w_cb;
 };
 
 DECLARE_DEVICE_TYPE(LISABUS, lisabus_device)
@@ -111,6 +116,7 @@ protected:
 
 	virtual u16 card_r(offs_t off, u16 mask = ~0) = 0;
 	virtual void card_w(offs_t off, u16 data, u16 mask = ~0) = 0;
+	virtual void iack_w(int level) {}
 
 	device_lisabus_card_interface(const machine_config &mconfig, device_t &device);
 
@@ -118,7 +124,7 @@ protected:
 	virtual void interface_pre_start() override;
 
 	void int_w(int level) { assert(m_lisabus); m_lisabus->slot_int_w(m_slot, level); }
-	void iack_w(int level) { assert(m_lisabus); m_lisabus->slot_iack_w(m_slot, level); }
+	void vpa_w(int level) { assert(m_lisabus); m_lisabus->slot_vpa_w(level); }
 
 	int slotno() const { assert(m_lisabus); return m_slot; }
 	lisabus_device &lisabus() { assert(m_lisabus); return *m_lisabus; }

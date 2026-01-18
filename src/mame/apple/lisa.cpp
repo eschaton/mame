@@ -380,13 +380,9 @@ void lisa_state::lisa(machine_config &config)
 	LISABUS_SLOT(config, "slot0", 20.37504_MHz_XTAL / 4, m_lisabus, lisabus_cards, nullptr);
 	LISABUS_SLOT(config, "slot1", 20.37504_MHz_XTAL / 4, m_lisabus, lisabus_cards, nullptr);
 	LISABUS_SLOT(config, "slot2", 20.37504_MHz_XTAL / 4, m_lisabus, lisabus_cards, nullptr);
-	m_lisabus->slot_int_w_cb().set([this](int slot, int level) {
-		switch (slot) {
-			case 0: m_ioir->in_w<3>(level); break;
-			case 1: m_ioir->in_w<4>(level); break;
-			case 2: m_ioir->in_w<5>(level); break;
-		}
-	});
+	m_lisabus->slot_int_w_cbs<0>().set_inputline(m_maincpu, M68K_IRQ_5);
+	m_lisabus->slot_int_w_cbs<1>().set_inputline(m_maincpu, M68K_IRQ_4);
+	m_lisabus->slot_int_w_cbs<2>().set_inputline(m_maincpu, M68K_IRQ_3);
 	m_lisabus->slot_berr_w_cb().set(m_maincpu, FUNC(m68000_device::berr_w));
 
 	config.set_perfect_quantum(m_iocop);
