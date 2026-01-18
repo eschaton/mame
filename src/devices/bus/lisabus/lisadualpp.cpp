@@ -20,9 +20,13 @@
 #include <iostream>
 
 #define LOG_ACCESS          (1 << 1U)
-#define LOGACCESS(...)      LOGMASKED(LOG_ACCESS, __VA_ARGS__)
+#define LOG_VIA0			(1 << 2U)
+#define LOG_VIA1			(1 << 3U)
+#define LOGACCESS(...)      LOGMASKED(LOG_ACCESS, "ACCESS: " __VA_ARGS__)
+#define LOGVIA0(...)		LOGMASKED(LOG_VIA0, "VIA0: " __VA_ARGS__)
+#define LOGVIA1(...)		LOGMASKED(LOG_VIA1, "VIA1: " __VA_ARGS__)
 // #define VERBOSE             (0)
-#define VERBOSE             (LOG_GENERAL|LOG_ACCESS)
+#define VERBOSE             (LOG_GENERAL|LOG_ACCESS|LOG_VIA0|LOG_VIA1)
 #define LOG_OUTPUT_STREAM   std::cout
 
 #include "logmacro.h"
@@ -63,6 +67,8 @@ protected:
 	virtual u16 card_r(offs_t off, u16 mask = ~0) override;
 	virtual void card_w(offs_t off, u16 data, u16 mask = ~0) override;
 
+	virtual void iack_w(int level) override;
+
 private:
 	u16 rom_r(offs_t off);
 
@@ -71,8 +77,8 @@ private:
 
 	required_region_ptr<u8> m_rom;
 	required_device<input_merger_device> m_irqm;
-	required_device<via6522_device> m_via0;
-	required_device<via6522_device> m_via1;
+	required_device<mos6522_device> m_via0;
+	required_device<mos6522_device> m_via1;
 	required_device<ttl74244_device> m_ppctrlbuf0;
 	required_device<ttl74244_device> m_ppctrlbuf1;
 	required_device<ttl74245_device> m_ppdatabuf0;
@@ -92,6 +98,8 @@ void lisadualpp_card_device::device_add_mconfig(machine_config &config)
 	INPUT_MERGER_ANY_HIGH(config, m_irqm);
 	m_irqm->output_handler().set(FUNC(lisadualpp_card_device::int_w));
 
+	// Lower Port
+
 	MOS6522(config, m_via0, 20.37504_MHz_XTAL / 16); // high-speed like Lisa 2/10
 	m_via0->irq_handler().set(m_irqm, FUNC(input_merger_device::in_w<0>));
 
@@ -99,12 +107,72 @@ void lisadualpp_card_device::device_add_mconfig(machine_config &config)
 	TTL74244(config, m_ppctrlbuf0, 0);
 	TTL74245(config, m_ppdatabuf0, 0);
 
+	m_lowerpp->write_pd_from_device().set(m_ppdatabuf0, FUNC(ttl74245_device::a_w));
+	m_ppdatabuf0->qa_cb().set(m_lowerpp, FUNC(applepp_connector::pd_set_from_host));
+	m_via0->writepa_handler().set(m_ppdatabuf0, FUNC(ttl74245_device::b_w));
+	m_ppdatabuf0->qb_cb().set(m_via0, FUNC(mos6522_device::write_pa));
+
+	m_via0->ca2_handler().set(m_ppctrlbuf0, FUNC(ttl74244_device::a_w<0>)); // 1A1
+	m_ppctrlbuf0->qa_cb<0>().set(m_lowerpp, FUNC(applepp_connector::pstrb_w)); // 1Y1
+	m_ppctrlbuf0->qa_cb<1>().set(m_lowerpp, FUNC(applepp_connector::prw_w)); // 1Y2
+	m_ppctrlbuf0->qa_cb<2>().set(m_lowerpp, FUNC(applepp_connector::pcmd_w)); // 1Y3
+	m_lowerpp->write_pparity().set(m_ppctrlbuf0, FUNC(ttl74244_device::a_w<3>)); // 1A4
+	m_ppctrlbuf0->qa_cb<3>().set(m_via0, FUNC(mos6522_device::write_pb6)); // 1Y4
+	// Leaving 2A1 & 2Y1 unconnected because it treats /RESET as input,
+	// and is in a wire-or with PB5 to reset the parity flipflop.
+	m_lowerpp->write_pchk().set(m_ppctrlbuf0, FUNC(ttl74244_device::b_w<1>)); // 2A2
+	m_ppctrlbuf0->qb_cb<1>().set(m_via0, FUNC(mos6522_device::write_pb0)); // 2Y2
+	m_lowerpp->write_pbsy().set(m_ppctrlbuf0, FUNC(ttl74244_device::b_w<2>)); // 2A3
+	m_ppctrlbuf0->qb_cb<2>().set(m_via0, FUNC(mos6522_device::write_pb1)); // 2Y3
+
+	m_via0->writepb_handler().set(  [this](u8 data) {
+										m_ppctrlbuf0->a_w<1>(BIT(data, 3)); // 1A2
+										m_ppctrlbuf0->a_w<2>(BIT(data, 4)); // 1A3
+										m_ppctrlbuf0->ga_w(BIT(data, 2));
+										m_ppdatabuf0->oe_w(BIT(data, 2));
+										m_ppdatabuf0->dir_w(BIT(data, 3));
+									});
+
+	m_ppctrlbuf0->qb_cb<3>().set(m_via0, FUNC(mos6522_device::write_pb1)); // 2Y4
+	m_ppctrlbuf0->qb_cb<3>().append(m_via0, FUNC(mos6522_device::write_ca1)); // +2Y4
+
+	// Upper Port
+
 	MOS6522(config, m_via1, 20.37504_MHz_XTAL / 16); // high-speed like Lisa 2/10
-	m_via1->irq_handler().set(m_irqm, FUNC(input_merger_device::in_w<1>));
+	m_via1->irq_handler().set(m_irqm, FUNC(input_merger_device::in_w<0>));
 
 	APPLEPP_CONNECTOR(config, m_upperpp, applepp_intf, nullptr);
 	TTL74244(config, m_ppctrlbuf1, 0);
 	TTL74245(config, m_ppdatabuf1, 0);
+
+	m_upperpp->write_pd_from_device().set(m_ppdatabuf1, FUNC(ttl74245_device::a_w));
+	m_ppdatabuf1->qa_cb().set(m_upperpp, FUNC(applepp_connector::pd_set_from_host));
+	m_via1->writepa_handler().set(m_ppdatabuf1, FUNC(ttl74245_device::b_w));
+	m_ppdatabuf1->qb_cb().set(m_via1, FUNC(mos6522_device::write_pa));
+
+	m_via1->ca2_handler().set(m_ppctrlbuf1, FUNC(ttl74244_device::a_w<0>)); // 1A1
+	m_ppctrlbuf1->qa_cb<0>().set(m_upperpp, FUNC(applepp_connector::pstrb_w)); // 1Y1
+	m_ppctrlbuf1->qa_cb<1>().set(m_upperpp, FUNC(applepp_connector::prw_w)); // 1Y2
+	m_ppctrlbuf1->qa_cb<2>().set(m_upperpp, FUNC(applepp_connector::pcmd_w)); // 1Y3
+	m_upperpp->write_pparity().set(m_ppctrlbuf1, FUNC(ttl74244_device::a_w<3>)); // 1A4
+	m_ppctrlbuf1->qa_cb<3>().set(m_via1, FUNC(mos6522_device::write_pb6)); // 1Y4
+	// Leaving 2A1 & 2Y1 unconnected because it treats /RESET as input,
+	// and is in a wire-or with PB5 to reset the parity flipflop.
+	m_upperpp->write_pchk().set(m_ppctrlbuf1, FUNC(ttl74244_device::b_w<1>)); // 2A2
+	m_ppctrlbuf1->qb_cb<1>().set(m_via1, FUNC(mos6522_device::write_pb0)); // 2Y2
+	m_upperpp->write_pbsy().set(m_ppctrlbuf1, FUNC(ttl74244_device::b_w<2>)); // 2A3
+	m_ppctrlbuf1->qb_cb<2>().set(m_via1, FUNC(mos6522_device::write_pb1)); // 2Y3
+
+	m_via1->writepb_handler().set(  [this](u8 data) {
+										m_ppctrlbuf1->a_w<1>(BIT(data, 3)); // 1A2
+										m_ppctrlbuf1->a_w<2>(BIT(data, 4)); // 1A3
+										m_ppctrlbuf1->ga_w(BIT(data, 2));
+										m_ppdatabuf1->oe_w(BIT(data, 2));
+										m_ppdatabuf1->dir_w(BIT(data, 3));
+									});
+
+	m_ppctrlbuf1->qb_cb<3>().set(m_via1, FUNC(mos6522_device::write_pb1)); // 2Y4
+	m_ppctrlbuf1->qb_cb<3>().append(m_via1, FUNC(mos6522_device::write_ca1)); // +2Y4
 }
 
 const tiny_rom_entry *lisadualpp_card_device::device_rom_region() const
@@ -114,6 +182,9 @@ const tiny_rom_entry *lisadualpp_card_device::device_rom_region() const
 
 void lisadualpp_card_device::device_start()
 {
+	// port B/2 on the control buffers is always passthrough
+	m_ppctrlbuf0->gb_w(0);
+	m_ppctrlbuf1->gb_w(0);
 }
 
 void lisadualpp_card_device::device_reset()
@@ -154,44 +225,21 @@ void lisadualpp_card_device::card_w(offs_t off, u16 data, u16 mask)
 	}
 }
 
+void lisadualpp_card_device::iack_w(int level)
+{
+	vpa_w(level);
+}
+
 u16 lisadualpp_card_device::rom_r(offs_t off)
 {
 	// the ROM is only 8 bits wide and read from odd addresses into a
 	// buffer to use during boot
 
-	u16 data = 0x0000;
-	if (off & 0x0001) {
-		data = m_rom[off >> 1];
-	}
+	u16 data = data = m_rom[off >> 1];
 
 	LOGACCESS("%s: rom_r(0x%04x) -> 0x%04x (%s)" "\n", name(), off, data, machine().describe_context());
 
 	return data;
-}
-
-static inline offs_t via_reg_for_offs(offs_t off)
-{
-	offs_t real_off;
-	switch (off) {
-		case 0x01: real_off = 0x00; break;
-		case 0x09: real_off = 0x01; break;
-		case 0x11: real_off = 0x02; break;
-		case 0x19: real_off = 0x03; break;
-		case 0x21: real_off = 0x04; break;
-		case 0x29: real_off = 0x05; break;
-		case 0x31: real_off = 0x06; break;
-		case 0x39: real_off = 0x07; break;
-		case 0x41: real_off = 0x08; break;
-		case 0x49: real_off = 0x09; break;
-		case 0x51: real_off = 0x0a; break;
-		case 0x59: real_off = 0x0b; break;
-		case 0x61: real_off = 0x0c; break;
-		case 0x69: real_off = 0x0d; break;
-		case 0x71: real_off = 0x0e; break;
-		case 0x79: real_off = 0x0f; break;
-		default:   fatalerror("bad access");
-	}
-	return real_off;
 }
 
 u16 lisadualpp_card_device::via_r(int n, offs_t off)
@@ -202,8 +250,8 @@ u16 lisadualpp_card_device::via_r(int n, offs_t off)
 		return 0x0000;
 	}
 
-	offs_t real_off = via_reg_for_offs(off);
-	via6522_device *via = (n == 0) ? m_via0 : m_via1;
+	offs_t real_off = off >> 3;
+	mos6522_device *via = (n == 0) ? m_via0 : m_via1;
 	u16 data = via->read(real_off);
 	return data;
 }
@@ -216,8 +264,8 @@ void lisadualpp_card_device::via_w(int n, offs_t off, u16 data)
 		return;
 	}
 
-	offs_t real_off = via_reg_for_offs(off);
-	via6522_device *via = (n == 0) ? m_via0 : m_via1;
+	offs_t real_off = off >> 3;
+	mos6522_device *via = (n == 0) ? m_via0 : m_via1;
 	via->write(real_off, data & 0x00ff);
 }
 
