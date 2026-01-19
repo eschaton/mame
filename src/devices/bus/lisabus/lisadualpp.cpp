@@ -246,12 +246,8 @@ u16 lisadualpp_card_device::via_r(int n, offs_t off)
 {
 	LOGACCESS("%s: via_r(0x%04x) (%s)" "\n", name(), off, machine().describe_context());
 
-	if (!(off & 0x1)) {
-		return 0x0000;
-	}
-
-	offs_t real_off = off >> 3;
 	mos6522_device *via = (n == 0) ? m_via0 : m_via1;
+	offs_t real_off = off >> 3;
 	u16 data = via->read(real_off);
 	return data;
 }
@@ -260,12 +256,8 @@ void lisadualpp_card_device::via_w(int n, offs_t off, u16 data)
 {
 	LOGACCESS("%s: via_w(0x%04x, 0x%04x) (%s)" "\n", name(), off, data, machine().describe_context());
 
-	if (!(off & 0x1)) {
-		return;
-	}
-
-	offs_t real_off = off >> 3;
 	mos6522_device *via = (n == 0) ? m_via0 : m_via1;
+	offs_t real_off = off >> 3;
 	via->write(real_off, data & 0x00ff);
 }
 
