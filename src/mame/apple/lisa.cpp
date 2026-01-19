@@ -380,10 +380,19 @@ void lisa_state::lisa(machine_config &config)
 	LISABUS_SLOT(config, "slot0", 20.37504_MHz_XTAL / 4, m_lisabus, lisabus_cards, nullptr);
 	LISABUS_SLOT(config, "slot1", 20.37504_MHz_XTAL / 4, m_lisabus, lisabus_cards, nullptr);
 	LISABUS_SLOT(config, "slot2", 20.37504_MHz_XTAL / 4, m_lisabus, lisabus_cards, nullptr);
+	m_lisabus->slot_berr_w_cb().set(m_maincpu, FUNC(m68000_device::berr_w));
 	m_lisabus->slot_int_w_cbs<0>().set_inputline(m_maincpu, M68K_IRQ_5);
 	m_lisabus->slot_int_w_cbs<1>().set_inputline(m_maincpu, M68K_IRQ_4);
 	m_lisabus->slot_int_w_cbs<2>().set_inputline(m_maincpu, M68K_IRQ_3);
-	m_lisabus->slot_berr_w_cb().set(m_maincpu, FUNC(m68000_device::berr_w));
+	/*
+	 In theory, each slot /INTn has its own /IACKn so a card can either
+	 supply its own vector or assert /VPA for autovector. As with most
+	 68000 designs though this doesn't really seem to be used, and the
+	 most important card (the Apple Dual Parallel Port card, which can
+	 support two ProFile hard disks) just ties its /IACKn to /VPA. So
+	 for now, just let the MMU say that IRQs 3 through 5 are also
+	 autovectoring, even though this really belongs in the card.
+	*/
 
 	config.set_perfect_quantum(m_iocop);
 }
